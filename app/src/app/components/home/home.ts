@@ -1,63 +1,31 @@
-import { Component, signal, computed } from '@angular/core';
+import { Component, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Task, TaskStatus } from '../../models/task.model';
-import { Skill, SkillStatus } from '../../models/skill.model';
-import { toast } from 'ngx-sonner';
-
-type NavItem = 'Task' | 'Cart' | 'Events' | 'Week Days' | 'Weekend Days' | 'Skills';
+import { Router, RouterModule } from '@angular/router';
 
 @Component({
   selector: 'app-home',
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, RouterModule],
   templateUrl: './home.html',
   styleUrl: './home.css',
 })
-export class Home {
-  activeTab = signal<NavItem>('Task');
+export class HomeLayout {
   isMobileMenuOpen = signal(false);
-  tasks = signal<Task[]>([]);
-  isAddingTask = signal(false);
-  selectedTask = signal<Task | null>(null);
-  isTaskDetailOpen = signal(false);
-  isDeleteConfirmOpen = signal(false);
-  taskToDelete = signal<string | null>(null);
+  activeRoute = signal('tasks');
 
-  // Skills
-  skills = signal<Skill[]>([]);
-  isAddingSkill = signal(false);
-  isEditingSkill = signal(false);
-  selectedSkill = signal<Skill | null>(null);
-  skillToDelete = signal<string | null>(null);
-  isDeleteSkillConfirmOpen = signal(false);
+  navItems = [
+    { path: 'tasks', label: 'Task' },
+    { path: 'cart', label: 'Cart' },
+    { path: 'events', label: 'Events' },
+    { path: 'week-days', label: 'Week Days' },
+    { path: 'weekend-days', label: 'Weekend Days' },
+    { path: 'skills', label: 'Skills' },
+  ];
 
-  taskForm: FormGroup;
-  skillForm: FormGroup;
+  constructor(private router: Router) {}
 
-  navItems: NavItem[] = ['Task', 'Cart', 'Events', 'Week Days', 'Weekend Days', 'Skills'];
-  taskStatuses: TaskStatus[] = ['Pending', 'Ongoing', 'Completed'];
-
-  pendingTasks = computed(() => this.tasks().filter((t) => t.status === 'Pending'));
-  ongoingTasks = computed(() => this.tasks().filter((t) => t.status === 'Ongoing'));
-  completedTasks = computed(() => this.tasks().filter((t) => t.status === 'Completed'));
-
-  pendingSkills = computed(() => this.skills().filter((s) => s.status === 'Pending'));
-  completedSkills = computed(() => this.skills().filter((s) => s.status === 'Completed'));
-
-  constructor(private fb: FormBuilder) {
-    this.taskForm = this.fb.group({
-      title: ['', [Validators.required, Validators.minLength(3)]],
-      description: ['', [Validators.required, Validators.minLength(10)]],
-    });
-
-    this.skillForm = this.fb.group({
-      name: ['', [Validators.required, Validators.minLength(2)]],
-      whereToLearn: ['', [Validators.required, Validators.minLength(5)]],
-    });
-  }
-
-  selectTab(tab: NavItem) {
-    this.activeTab.set(tab);
+  navigateTo(path: string) {
+    this.activeRoute.set(path);
+    this.router.navigate([path]);
     this.isMobileMenuOpen.set(false);
   }
 
@@ -65,237 +33,7 @@ export class Home {
     this.isMobileMenuOpen.set(!this.isMobileMenuOpen());
   }
 
-  showAddTaskForm() {
-    this.isAddingTask.set(true);
-    this.taskForm.reset();
-  }
-
-  cancelAddTask() {
-    this.isAddingTask.set(false);
-    this.taskForm.reset();
-  }
-
-  addTask() {
-    if (this.taskForm.invalid) {
-      this.taskForm.markAllAsTouched();
-      toast.error('Please fill in all required fields correctly');
-      return;
-    }
-
-    const formValue = this.taskForm.value;
-    const newTask: Task = {
-      id: Date.now().toString(),
-      title: formValue.title.trim(),
-      description: formValue.description.trim(),
-      status: 'Pending',
-      createdAt: new Date(),
-    };
-
-    this.tasks.update((tasks) => [...tasks, newTask]);
-    this.isAddingTask.set(false);
-    this.taskForm.reset();
-    toast.success('Task added successfully!');
-  }
-
-  openTaskDetail(task: Task) {
-    this.selectedTask.set(task);
-    this.isTaskDetailOpen.set(true);
-  }
-
-  closeTaskDetail() {
-    this.isTaskDetailOpen.set(false);
-    this.selectedTask.set(null);
-  }
-
-  updateTaskStatus(taskId: string, newStatus: TaskStatus) {
-    const task = this.tasks().find((t) => t.id === taskId);
-    this.tasks.update((tasks) =>
-      tasks.map((task) => (task.id === taskId ? { ...task, status: newStatus } : task)),
-    );
-    if (task) {
-      toast.success(`Task moved to ${newStatus}!`);
-    }
-  }
-
-  showDeleteConfirmation(taskId: string) {
-    this.taskToDelete.set(taskId);
-    this.isDeleteConfirmOpen.set(true);
-  }
-
-  cancelDelete() {
-    this.isDeleteConfirmOpen.set(false);
-    this.taskToDelete.set(null);
-  }
-
-  confirmDelete() {
-    const taskId = this.taskToDelete();
-    if (taskId) {
-      const task = this.tasks().find((t) => t.id === taskId);
-      this.tasks.update((tasks) => tasks.filter((task) => task.id !== taskId));
-      if (this.selectedTask()?.id === taskId) {
-        this.closeTaskDetail();
-      }
-      if (task) {
-        toast.success('Task deleted successfully!');
-      }
-    }
-    this.isDeleteConfirmOpen.set(false);
-    this.taskToDelete.set(null);
-  }
-
-  deleteTask(taskId: string) {
-    this.showDeleteConfirmation(taskId);
-  }
-
-  deleteTaskFromDetail() {
-    const taskId = this.selectedTask()?.id;
-    if (taskId) {
-      this.showDeleteConfirmation(taskId);
-    }
-  }
-
-  updateTaskStatusFromDetail(newStatus: TaskStatus) {
-    const taskId = this.selectedTask()?.id;
-    if (taskId) {
-      this.updateTaskStatus(taskId, newStatus);
-      const updatedTask = this.tasks().find((t) => t.id === taskId);
-      if (updatedTask) {
-        this.selectedTask.set(updatedTask);
-      }
-    }
-  }
-
-  getNextStatus(currentStatus: TaskStatus): TaskStatus | null {
-    if (currentStatus === 'Pending') return 'Ongoing';
-    if (currentStatus === 'Ongoing') return 'Completed';
-    return null;
-  }
-
-  getPreviousStatus(currentStatus: TaskStatus): TaskStatus | null {
-    if (currentStatus === 'Completed') return 'Ongoing';
-    if (currentStatus === 'Ongoing') return 'Pending';
-    return null;
-  }
-
-  // Skills Methods
-  showAddSkillForm() {
-    this.isAddingSkill.set(true);
-    this.isEditingSkill.set(false);
-    this.selectedSkill.set(null);
-    this.skillForm.reset();
-  }
-
-  cancelSkillForm() {
-    this.isAddingSkill.set(false);
-    this.isEditingSkill.set(false);
-    this.selectedSkill.set(null);
-    this.skillForm.reset();
-  }
-
-  addSkill() {
-    if (this.skillForm.invalid) {
-      this.skillForm.markAllAsTouched();
-      toast.error('Please fill in all required fields correctly');
-      return;
-    }
-
-    const formValue = this.skillForm.value;
-    const newSkill: Skill = {
-      id: Date.now().toString(),
-      name: formValue.name.trim(),
-      whereToLearn: formValue.whereToLearn.trim(),
-      status: 'Pending',
-      createdAt: new Date(),
-    };
-
-    this.skills.update((skills) => [...skills, newSkill]);
-    this.isAddingSkill.set(false);
-    this.skillForm.reset();
-    toast.success('Skill added successfully!');
-  }
-
-  showEditSkillForm(skill: Skill) {
-    this.selectedSkill.set(skill);
-    this.isEditingSkill.set(true);
-    this.isAddingSkill.set(true);
-    this.skillForm.patchValue({
-      name: skill.name,
-      whereToLearn: skill.whereToLearn,
-    });
-  }
-
-  updateSkill() {
-    if (this.skillForm.invalid) {
-      this.skillForm.markAllAsTouched();
-      toast.error('Please fill in all required fields correctly');
-      return;
-    }
-
-    const skillId = this.selectedSkill()?.id;
-    if (!skillId) return;
-
-    const formValue = this.skillForm.value;
-    this.skills.update((skills) =>
-      skills.map((skill) =>
-        skill.id === skillId
-          ? {
-              ...skill,
-              name: formValue.name.trim(),
-              whereToLearn: formValue.whereToLearn.trim(),
-            }
-          : skill,
-      ),
-    );
-
-    this.isAddingSkill.set(false);
-    this.isEditingSkill.set(false);
-    this.selectedSkill.set(null);
-    this.skillForm.reset();
-    toast.success('Skill updated successfully!');
-  }
-
-  showDeleteSkillConfirmation(skillId: string) {
-    this.skillToDelete.set(skillId);
-    this.isDeleteSkillConfirmOpen.set(true);
-  }
-
-  cancelDeleteSkill() {
-    this.isDeleteSkillConfirmOpen.set(false);
-    this.skillToDelete.set(null);
-  }
-
-  confirmDeleteSkill() {
-    const skillId = this.skillToDelete();
-    if (skillId) {
-      const skill = this.skills().find((s) => s.id === skillId);
-      this.skills.update((skills) => skills.filter((skill) => skill.id !== skillId));
-      if (skill) {
-        toast.success('Skill deleted successfully!');
-      }
-    }
-    this.isDeleteSkillConfirmOpen.set(false);
-    this.skillToDelete.set(null);
-  }
-
-  deleteSkill(skillId: string) {
-    this.showDeleteSkillConfirmation(skillId);
-  }
-
-  updateSkillStatus(skillId: string, newStatus: SkillStatus) {
-    const skill = this.skills().find((s) => s.id === skillId);
-    this.skills.update((skills) =>
-      skills.map((skill) => (skill.id === skillId ? { ...skill, status: newStatus } : skill)),
-    );
-    if (skill) {
-      toast.success(`Skill moved to ${newStatus}!`);
-    }
-  }
-
-  toggleSkillStatus(skillId: string) {
-    const skill = this.skills().find((s) => s.id === skillId);
-    if (skill) {
-      const newStatus: SkillStatus = skill.status === 'Pending' ? 'Completed' : 'Pending';
-      this.updateSkillStatus(skillId, newStatus);
-    }
+  isActive(path: string): boolean {
+    return this.router.url.includes(path);
   }
 }

@@ -1,6 +1,6 @@
 import { Routes } from '@angular/router';
 import { Auth } from './components/auth/auth';
-import { HomeLayout } from './components/home/home-new';
+import { HomeLayout } from './components/home/home';
 import { Tasks } from './components/tasks/tasks';
 import { Skills } from './components/skills/skills';
 import { Cart } from './components/cart/cart';
