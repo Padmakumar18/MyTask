@@ -1,0 +1,250 @@
+<div class="auth-container">
+  <div class="auth-card">
+    <!-- Header -->
+    <div class="auth-header">
+      <h1 class="auth-title">{{ isLoginMode() ? 'Welcome Back' : 'Create Account' }}</h1>
+      <p class="auth-subtitle">
+        {{ isLoginMode() ? 'Sign in to continue' : 'Sign up to get started' }}
+      </p>
+    </div>
+
+    <!-- Login Form -->
+    @if (isLoginMode()) {
+      <form [formGroup]="loginForm" (ngSubmit)="onLogin()" class="auth-form">
+        <div class="form-group">
+          <label for="login-email" class="form-label">Email</label>
+          <input
+            id="login-email"
+            type="email"
+            formControlName="email"
+            class="form-input"
+            placeholder="Enter your email"
+          />
+          @if (loginForm.get('email')?.invalid && loginForm.get('email')?.touched) {
+            <span class="error-message">Please enter a valid email</span>
+          }
+        </div>
+
+        <div class="form-group">
+          <label for="login-password" class="form-label">Password</label>
+          <div class="password-wrapper">
+            <input
+              id="login-password"
+              [type]="showPassword() ? 'text' : 'password'"
+              formControlName="password"
+              class="form-input"
+              placeholder="Enter your password"
+            />
+            <button
+              type="button"
+              class="password-toggle"
+              (click)="togglePasswordVisibility()"
+              [attr.aria-label]="showPassword() ? 'Hide password' : 'Show password'"
+            >
+              @if (showPassword()) {
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path
+                    d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"
+                  ></path>
+                  <line x1="1" y1="1" x2="23" y2="23"></line>
+                </svg>
+              } @else {
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                  <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+              }
+            </button>
+          </div>
+          @if (loginForm.get('password')?.invalid && loginForm.get('password')?.touched) {
+            <span class="error-message">Password must be at least 6 characters</span>
+          }
+        </div>
+
+        <button type="submit" class="submit-btn" [disabled]="loginForm.invalid">Sign In</button>
+      </form>
+    }
+
+    <!-- Register Form -->
+    @if (!isLoginMode()) {
+      <form [formGroup]="registerForm" (ngSubmit)="onRegister()" class="auth-form">
+        <div class="form-group">
+          <label for="register-name" class="form-label">Name</label>
+          <input
+            id="register-name"
+            type="text"
+            formControlName="name"
+            class="form-input"
+            placeholder="Enter your name"
+          />
+          @if (registerForm.get('name')?.invalid && registerForm.get('name')?.touched) {
+            <span class="error-message">Name must be at least 2 characters</span>
+          }
+        </div>
+
+        <div class="form-group">
+          <label for="register-email" class="form-label">Email</label>
+          <input
+            id="register-email"
+            type="email"
+            formControlName="email"
+            class="form-input"
+            placeholder="Enter your email"
+          />
+          @if (registerForm.get('email')?.invalid && registerForm.get('email')?.touched) {
+            <span class="error-message">Please enter a valid email</span>
+          }
+        </div>
+
+        <div class="form-group">
+          <label for="register-password" class="form-label">Password</label>
+          <div class="password-wrapper">
+            <input
+              id="register-password"
+              [type]="showPassword() ? 'text' : 'password'"
+              formControlName="password"
+              class="form-input"
+              placeholder="Create a password"
+            />
+            <button
+              type="button"
+              class="password-toggle"
+              (click)="togglePasswordVisibility()"
+              [attr.aria-label]="showPassword() ? 'Hide password' : 'Show password'"
+            >
+              @if (showPassword()) {
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path
+                    d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"
+                  ></path>
+                  <line x1="1" y1="1" x2="23" y2="23"></line>
+                </svg>
+              } @else {
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                  <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+              }
+            </button>
+          </div>
+          @if (registerForm.get('password')?.invalid && registerForm.get('password')?.touched) {
+            <span class="error-message">Password must be at least 6 characters</span>
+          }
+        </div>
+
+        <div class="form-group">
+          <label for="register-confirm-password" class="form-label">Confirm Password</label>
+          <div class="password-wrapper">
+            <input
+              id="register-confirm-password"
+              [type]="showConfirmPassword() ? 'text' : 'password'"
+              formControlName="confirmPassword"
+              class="form-input"
+              placeholder="Confirm your password"
+            />
+            <button
+              type="button"
+              class="password-toggle"
+              (click)="toggleConfirmPasswordVisibility()"
+              [attr.aria-label]="showConfirmPassword() ? 'Hide password' : 'Show password'"
+            >
+              @if (showConfirmPassword()) {
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path
+                    d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"
+                  ></path>
+                  <line x1="1" y1="1" x2="23" y2="23"></line>
+                </svg>
+              } @else {
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                  <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+              }
+            </button>
+          </div>
+          @if (
+            registerForm.get('confirmPassword')?.invalid &&
+            registerForm.get('confirmPassword')?.touched
+          ) {
+            <span class="error-message">Please confirm your password</span>
+          }
+        </div>
+
+        <button type="submit" class="submit-btn" [disabled]="registerForm.invalid">
+          Create Account
+        </button>
+      </form>
+    }
+
+    <!-- Toggle Mode -->
+    <div class="auth-footer">
+      <p class="toggle-text">
+        {{ isLoginMode() ? "Don't have an account?" : 'Already have an account?' }}
+        <button type="button" class="toggle-btn" (click)="toggleMode()">
+          {{ isLoginMode() ? 'Sign Up' : 'Sign In' }}
+        </button>
+      </p>
+    </div>
+  </div>
+</div>
