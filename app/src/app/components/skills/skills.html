@@ -1,0 +1,321 @@
+<div class="page-container">
+  <div class="content-header">
+    <h1 class="content-title">Skills</h1>
+    @if (!isAddingSkill()) {
+      <button class="add-task-btn" (click)="showAddSkillForm()">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+        Add Skill
+      </button>
+    }
+  </div>
+
+  <div class="skills-section">
+    <!-- Add/Edit Skill Form -->
+    @if (isAddingSkill()) {
+      <div class="add-task-form">
+        <h3 class="form-title">{{ isEditingSkill() ? 'Edit Skill' : 'Add New Skill' }}</h3>
+        <form [formGroup]="skillForm" (ngSubmit)="isEditingSkill() ? updateSkill() : addSkill()">
+          <div class="form-group">
+            <label for="skill-name" class="form-label">Skill Name *</label>
+            <input
+              id="skill-name"
+              type="text"
+              formControlName="name"
+              class="task-input"
+              placeholder="e.g., Angular, Python, UI Design..."
+            />
+            @if (skillForm.get('name')?.invalid && skillForm.get('name')?.touched) {
+              <span class="error-text">Skill name is required (minimum 2 characters)</span>
+            }
+          </div>
+
+          <div class="form-group">
+            <label for="skill-learn" class="form-label">Where to Learn *</label>
+            <textarea
+              id="skill-learn"
+              formControlName="whereToLearn"
+              class="task-textarea"
+              placeholder="e.g., Udemy, YouTube, Official Documentation, Coursera..."
+              rows="3"
+            ></textarea>
+            @if (skillForm.get('whereToLearn')?.invalid && skillForm.get('whereToLearn')?.touched) {
+              <span class="error-text">Where to learn is required (minimum 5 characters)</span>
+            }
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="btn-primary" [disabled]="skillForm.invalid">
+              {{ isEditingSkill() ? 'Update Skill' : 'Add Skill' }}
+            </button>
+            <button type="button" class="btn-secondary" (click)="cancelSkillForm()">Cancel</button>
+          </div>
+        </form>
+      </div>
+    }
+
+    <!-- Skills Grid -->
+    @if (skills().length === 0 && !isAddingSkill()) {
+      <div class="section-content">
+        <div class="empty-state">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="64"
+            height="64"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+            <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+          </svg>
+          <p>No skills added yet</p>
+          <button class="add-task-btn" (click)="showAddSkillForm()" style="margin-top: 1rem">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            Add Your First Skill
+          </button>
+        </div>
+      </div>
+    } @else if (skills().length > 0) {
+      <!-- Pending Skills Section -->
+      <div class="skill-status-section">
+        <div class="skill-status-header pending">
+          <h3>Pending Skills</h3>
+          <span class="skill-status-count">{{ pendingSkills().length }}</span>
+        </div>
+        @if (pendingSkills().length === 0) {
+          <div class="empty-skill-status">
+            <p>No pending skills</p>
+          </div>
+        } @else {
+          <div class="skills-grid">
+            @for (skill of pendingSkills(); track skill.id) {
+              <div class="skill-card">
+                <div class="skill-header">
+                  <h3 class="skill-name">{{ skill.name }}</h3>
+                  <span class="skill-status-badge pending">Pending</span>
+                </div>
+                <div class="skill-body">
+                  <div class="skill-info">
+                    <span class="skill-info-label">Where to Learn:</span>
+                    <p class="skill-info-value">{{ skill.whereToLearn }}</p>
+                  </div>
+                  <p class="skill-date">Added: {{ skill.createdAt | date: 'short' }}</p>
+                </div>
+                <div class="skill-actions">
+                  <button
+                    class="skill-action-btn complete-btn"
+                    (click)="toggleSkillStatus(skill.id)"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    Mark Complete
+                  </button>
+                  <button class="skill-action-btn edit-btn" (click)="showEditSkillForm(skill)">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                    </svg>
+                    Edit
+                  </button>
+                  <button class="skill-action-btn delete-btn" (click)="deleteSkill(skill.id)">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <polyline points="3 6 5 6 21 6"></polyline>
+                      <path
+                        d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+                      ></path>
+                    </svg>
+                    Delete
+                  </button>
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </div>
+
+      <!-- Completed Skills Section -->
+      <div class="skill-status-section">
+        <div class="skill-status-header completed">
+          <h3>Completed Skills</h3>
+          <span class="skill-status-count">{{ completedSkills().length }}</span>
+        </div>
+        @if (completedSkills().length === 0) {
+          <div class="empty-skill-status">
+            <p>No completed skills yet</p>
+          </div>
+        } @else {
+          <div class="skills-grid">
+            @for (skill of completedSkills(); track skill.id) {
+              <div class="skill-card completed">
+                <div class="skill-header">
+                  <h3 class="skill-name">{{ skill.name }}</h3>
+                  <span class="skill-status-badge completed">Completed</span>
+                </div>
+                <div class="skill-body">
+                  <div class="skill-info">
+                    <span class="skill-info-label">Where to Learn:</span>
+                    <p class="skill-info-value">{{ skill.whereToLearn }}</p>
+                  </div>
+                  <p class="skill-date">Added: {{ skill.createdAt | date: 'short' }}</p>
+                </div>
+                <div class="skill-actions">
+                  <button
+                    class="skill-action-btn pending-btn"
+                    (click)="toggleSkillStatus(skill.id)"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <polyline points="1 4 1 10 7 10"></polyline>
+                      <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+                    </svg>
+                    Mark Pending
+                  </button>
+                  <button class="skill-action-btn edit-btn" (click)="showEditSkillForm(skill)">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                    </svg>
+                    Edit
+                  </button>
+                  <button class="skill-action-btn delete-btn" (click)="deleteSkill(skill.id)">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <polyline points="3 6 5 6 21 6"></polyline>
+                      <path
+                        d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+                      ></path>
+                    </svg>
+                    Delete
+                  </button>
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    }
+  </div>
+
+  <!-- Delete Skill Confirmation Dialog -->
+  @if (isDeleteSkillConfirmOpen()) {
+    <div class="modal-overlay confirm-overlay" (click)="cancelDeleteSkill()">
+      <div class="confirm-dialog" (click)="$event.stopPropagation()">
+        <div class="confirm-icon">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="48"
+            height="48"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+        </div>
+        <h3 class="confirm-title">Delete Skill?</h3>
+        <p class="confirm-message">
+          Are you sure you want to delete this skill? This action cannot be undone.
+        </p>
+        <div class="confirm-actions">
+          <button class="confirm-btn btn-cancel" (click)="cancelDeleteSkill()">Cancel</button>
+          <button class="confirm-btn btn-confirm-delete" (click)="confirmDeleteSkill()">
+            Delete
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

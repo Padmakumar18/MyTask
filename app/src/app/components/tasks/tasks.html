@@ -1,0 +1,495 @@
+<div class="page-container">
+  <div class="content-header">
+    <h1 class="content-title">Tasks</h1>
+    <button class="add-task-btn" (click)="showAddTaskForm()">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="20"
+        height="20"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <line x1="12" y1="5" x2="12" y2="19"></line>
+        <line x1="5" y1="12" x2="19" y2="12"></line>
+      </svg>
+      Add Task
+    </button>
+  </div>
+
+  <!-- Add Task Form -->
+  @if (isAddingTask()) {
+    <div class="add-task-form">
+      <form [formGroup]="taskForm" (ngSubmit)="addTask()">
+        <div class="form-group">
+          <label for="task-title" class="form-label">Task Title *</label>
+          <input
+            id="task-title"
+            type="text"
+            formControlName="title"
+            class="task-input"
+            placeholder="Enter task title (min 3 characters)..."
+          />
+          @if (taskForm.get('title')?.invalid && taskForm.get('title')?.touched) {
+            <span class="error-text">Title is required (minimum 3 characters)</span>
+          }
+        </div>
+
+        <div class="form-group">
+          <label for="task-description" class="form-label">Task Description *</label>
+          <textarea
+            id="task-description"
+            formControlName="description"
+            class="task-textarea"
+            placeholder="Enter task description (min 10 characters)..."
+            rows="4"
+          ></textarea>
+          @if (taskForm.get('description')?.invalid && taskForm.get('description')?.touched) {
+            <span class="error-text">Description is required (minimum 10 characters)</span>
+          }
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn-primary" [disabled]="taskForm.invalid">Add Task</button>
+          <button type="button" class="btn-secondary" (click)="cancelAddTask()">Cancel</button>
+        </div>
+      </form>
+    </div>
+  }
+
+  <!-- Task Section with Status Columns -->
+  <div class="task-section">
+    <div class="task-columns">
+      <!-- Pending Column -->
+      <div class="task-column">
+        <div class="column-header pending">
+          <h3>Pending</h3>
+          <span class="task-count">{{ pendingTasks().length }}</span>
+        </div>
+        <div class="task-list">
+          @if (pendingTasks().length === 0) {
+            <div class="empty-column">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="48"
+                height="48"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+              </svg>
+              <p>No pending tasks</p>
+            </div>
+          } @else {
+            @for (task of pendingTasks(); track task.id) {
+              <div class="task-card" (click)="openTaskDetail(task)">
+                <div class="task-content">
+                  <h4 class="task-title">{{ task.title }}</h4>
+                  <p class="task-description-preview">{{ task.description }}</p>
+                  <p class="task-date">{{ task.createdAt | date: 'short' }}</p>
+                </div>
+                <div class="task-actions" (click)="$event.stopPropagation()">
+                  @if (getNextStatus(task.status)) {
+                    <button
+                      class="action-btn move-btn"
+                      (click)="updateTaskStatus(task.id, getNextStatus(task.status)!)"
+                      title="Move to {{ getNextStatus(task.status) }}"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="18"
+                        height="18"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                        <polyline points="12 5 19 12 12 19"></polyline>
+                      </svg>
+                    </button>
+                  }
+                  <button
+                    class="action-btn delete-btn"
+                    (click)="deleteTask(task.id)"
+                    title="Delete task"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <polyline points="3 6 5 6 21 6"></polyline>
+                      <path
+                        d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+                      ></path>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            }
+          }
+        </div>
+      </div>
+
+      <!-- Ongoing Column -->
+      <div class="task-column">
+        <div class="column-header ongoing">
+          <h3>Ongoing</h3>
+          <span class="task-count">{{ ongoingTasks().length }}</span>
+        </div>
+        <div class="task-list">
+          @if (ongoingTasks().length === 0) {
+            <div class="empty-column">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="48"
+                height="48"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+              </svg>
+              <p>No ongoing tasks</p>
+            </div>
+          } @else {
+            @for (task of ongoingTasks(); track task.id) {
+              <div class="task-card" (click)="openTaskDetail(task)">
+                <div class="task-content">
+                  <h4 class="task-title">{{ task.title }}</h4>
+                  <p class="task-description-preview">{{ task.description }}</p>
+                  <p class="task-date">{{ task.createdAt | date: 'short' }}</p>
+                </div>
+                <div class="task-actions" (click)="$event.stopPropagation()">
+                  @if (getPreviousStatus(task.status)) {
+                    <button
+                      class="action-btn back-btn"
+                      (click)="updateTaskStatus(task.id, getPreviousStatus(task.status)!)"
+                      title="Move back to {{ getPreviousStatus(task.status) }}"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="18"
+                        height="18"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
+                        <line x1="19" y1="12" x2="5" y2="12"></line>
+                        <polyline points="12 19 5 12 12 5"></polyline>
+                      </svg>
+                    </button>
+                  }
+                  @if (getNextStatus(task.status)) {
+                    <button
+                      class="action-btn move-btn"
+                      (click)="updateTaskStatus(task.id, getNextStatus(task.status)!)"
+                      title="Move to {{ getNextStatus(task.status) }}"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="18"
+                        height="18"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                        <polyline points="12 5 19 12 12 19"></polyline>
+                      </svg>
+                    </button>
+                  }
+                  <button
+                    class="action-btn delete-btn"
+                    (click)="deleteTask(task.id)"
+                    title="Delete task"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <polyline points="3 6 5 6 21 6"></polyline>
+                      <path
+                        d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+                      ></path>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            }
+          }
+        </div>
+      </div>
+
+      <!-- Completed Column -->
+      <div class="task-column">
+        <div class="column-header completed">
+          <h3>Completed</h3>
+          <span class="task-count">{{ completedTasks().length }}</span>
+        </div>
+        <div class="task-list">
+          @if (completedTasks().length === 0) {
+            <div class="empty-column">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="48"
+                height="48"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+              </svg>
+              <p>No completed tasks</p>
+            </div>
+          } @else {
+            @for (task of completedTasks(); track task.id) {
+              <div class="task-card completed" (click)="openTaskDetail(task)">
+                <div class="task-content">
+                  <h4 class="task-title">{{ task.title }}</h4>
+                  <p class="task-description-preview">{{ task.description }}</p>
+                  <p class="task-date">{{ task.createdAt | date: 'short' }}</p>
+                </div>
+                <div class="task-actions" (click)="$event.stopPropagation()">
+                  @if (getPreviousStatus(task.status)) {
+                    <button
+                      class="action-btn back-btn"
+                      (click)="updateTaskStatus(task.id, getPreviousStatus(task.status)!)"
+                      title="Move back to {{ getPreviousStatus(task.status) }}"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="18"
+                        height="18"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
+                        <line x1="19" y1="12" x2="5" y2="12"></line>
+                        <polyline points="12 19 5 12 12 5"></polyline>
+                      </svg>
+                    </button>
+                  }
+                  <button
+                    class="action-btn delete-btn"
+                    (click)="deleteTask(task.id)"
+                    title="Delete task"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <polyline points="3 6 5 6 21 6"></polyline>
+                      <path
+                        d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+                      ></path>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            }
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Task Detail Modal -->
+  @if (isTaskDetailOpen() && selectedTask()) {
+    <div class="modal-overlay" (click)="closeTaskDetail()">
+      <div class="modal-content" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <div class="modal-title-section">
+            <h2 class="modal-title">Task Details</h2>
+            <span class="status-badge-modal" [class]="selectedTask()!.status.toLowerCase()">
+              {{ selectedTask()!.status }}
+            </span>
+          </div>
+          <button class="modal-close-btn" (click)="closeTaskDetail()" aria-label="Close modal">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+
+        <div class="modal-body">
+          <div class="detail-section">
+            <h3 class="detail-label">Title</h3>
+            <p class="detail-value">{{ selectedTask()!.title }}</p>
+          </div>
+
+          <div class="detail-section">
+            <h3 class="detail-label">Description</h3>
+            <p class="detail-value description">{{ selectedTask()!.description }}</p>
+          </div>
+
+          <div class="detail-section">
+            <h3 class="detail-label">Created At</h3>
+            <p class="detail-value">{{ selectedTask()!.createdAt | date: 'medium' }}</p>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <div class="modal-actions">
+            @if (getPreviousStatus(selectedTask()!.status)) {
+              <button
+                class="modal-btn btn-back"
+                (click)="updateTaskStatusFromDetail(getPreviousStatus(selectedTask()!.status)!)"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <line x1="19" y1="12" x2="5" y2="12"></line>
+                  <polyline points="12 19 5 12 12 5"></polyline>
+                </svg>
+                Move to {{ getPreviousStatus(selectedTask()!.status) }}
+              </button>
+            }
+            @if (getNextStatus(selectedTask()!.status)) {
+              <button
+                class="modal-btn btn-next"
+                (click)="updateTaskStatusFromDetail(getNextStatus(selectedTask()!.status)!)"
+              >
+                Move to {{ getNextStatus(selectedTask()!.status) }}
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                  <polyline points="12 5 19 12 12 19"></polyline>
+                </svg>
+              </button>
+            }
+            <button class="modal-btn btn-delete" (click)="deleteTaskFromDetail()">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path
+                  d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+                ></path>
+              </svg>
+              Delete Task
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Delete Confirmation Dialog -->
+  @if (isDeleteConfirmOpen()) {
+    <div class="modal-overlay confirm-overlay" (click)="cancelDelete()">
+      <div class="confirm-dialog" (click)="$event.stopPropagation()">
+        <div class="confirm-icon">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="48"
+            height="48"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+        </div>
+        <h3 class="confirm-title">Delete Task?</h3>
+        <p class="confirm-message">
+          Are you sure you want to delete this task? This action cannot be undone.
+        </p>
+        <div class="confirm-actions">
+          <button class="confirm-btn btn-cancel" (click)="cancelDelete()">Cancel</button>
+          <button class="confirm-btn btn-confirm-delete" (click)="confirmDelete()">Delete</button>
+        </div>
+      </div>
+    </div>
+  }
+</div>
