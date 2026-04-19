@@ -44,22 +44,44 @@
 
   <!-- Sidebar Navigation (Desktop) / Mobile Menu -->
   <nav class="sidebar" [class.mobile-open]="isMobileMenuOpen()">
-    <div class="sidebar-header">
-      <h2 class="sidebar-title">Navigation</h2>
+    <div class="sidebar-main">
+      <div class="sidebar-header">
+        <h2 class="sidebar-title">Navigation</h2>
+      </div>
+      <ul class="nav-list">
+        @for (item of navItems; track item.path) {
+          <li>
+            <button
+              class="nav-btn"
+              [class.active]="isActive(item.path)"
+              (click)="navigateTo(item.path)"
+            >
+              {{ item.label }}
+            </button>
+          </li>
+        }
+      </ul>
     </div>
-    <ul class="nav-list">
-      @for (item of navItems; track item.path) {
-        <li>
-          <button
-            class="nav-btn"
-            [class.active]="isActive(item.path)"
-            (click)="navigateTo(item.path)"
-          >
-            {{ item.label }}
-          </button>
-        </li>
-      }
-    </ul>
+    <div class="sidebar-footer">
+      <button class="logout-btn" (click)="onLogout()">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+          <polyline points="16 17 21 12 16 7"></polyline>
+          <line x1="21" y1="12" x2="9" y2="12"></line>
+        </svg>
+        Logout
+      </button>
+    </div>
   </nav>
 
   <!-- Main Content Area with Router Outlet -->
@@ -67,7 +89,6 @@
     <router-outlet></router-outlet>
   </main>
 
-  <!-- Mobile Menu Overlay -->
   @if (isMobileMenuOpen()) {
     <div class="mobile-overlay" (click)="toggleMobileMenu()"></div>
   }

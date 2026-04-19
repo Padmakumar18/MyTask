@@ -64,6 +64,12 @@
   z-index: 50;
 }
 
+.sidebar-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
 .sidebar-header {
   margin-bottom: 2rem;
 }
@@ -1242,4 +1248,40 @@
   .skill-status-badge {
     align-self: flex-start;
   }
+}
+
+/* Sidebar Footer & Logout Button */
+.sidebar-footer {
+  margin-top: auto;
+  padding-top: 1rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+.logout-btn {
+  width: 100%;
+  padding: 0.875rem 1.25rem;
+  background: #fee2e2;
+  border: 2px solid #ef4444;
+  border-radius: 0.5rem;
+  color: #991b1b;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: all 0.2s;
+}
+
+.logout-btn:hover {
+  background: #fecaca;
+  border-color: #dc2626;
+  color: #7f1d1d;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(239, 68, 68, 0.2);
+}
+
+.logout-btn svg {
+  flex-shrink: 0;
 }

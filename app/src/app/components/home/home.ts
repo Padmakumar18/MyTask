@@ -1,14 +1,19 @@
-import { Component, signal } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
+import { SupabaseService } from '../../services/supabase';
+import { UserService } from '../../services/user.service';
+import { toast } from 'ngx-sonner';
 
 @Component({
   selector: 'app-home',
+  standalone: true,
   imports: [CommonModule, RouterModule],
   templateUrl: './home.html',
   styleUrl: './home.css',
 })
 export class HomeLayout {
+  private readonly userService = inject(UserService);
   isMobileMenuOpen = signal(false);
   activeRoute = signal('tasks');
 
@@ -21,7 +26,10 @@ export class HomeLayout {
     { path: 'skills', label: 'Skills' },
   ];
 
-  constructor(private router: Router) {}
+  constructor(
+    private router: Router,
+    private supabaseService: SupabaseService,
+  ) {}
 
   navigateTo(path: string) {
     this.activeRoute.set(path);
@@ -35,5 +43,11 @@ export class HomeLayout {
 
   isActive(path: string): boolean {
     return this.router.url.includes(path);
+  }
+
+  onLogout() {
+    this.userService.logout();
+    toast.success('Logged out successfully');
+    this.router.navigate(['/auth']);
   }
 }
