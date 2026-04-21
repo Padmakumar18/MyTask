@@ -13,7 +13,6 @@ export class UserService {
   private userEmail = signal<string | null>(this.getStoredUserEmail());
 
   constructor() {
-    // Auto-login on service initialization
     this.initializeAuth();
   }
 
