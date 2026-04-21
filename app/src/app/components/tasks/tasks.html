@@ -90,18 +90,18 @@
               <p>No pending tasks</p>
             </div>
           } @else {
-            @for (task of pendingTasks(); track task.id) {
+            @for (task of pendingTasks(); track task.task_id) {
               <div class="task-card" (click)="openTaskDetail(task)">
                 <div class="task-content">
-                  <h4 class="task-title">{{ task.title }}</h4>
-                  <p class="task-description-preview">{{ task.description }}</p>
-                  <p class="task-date">{{ task.createdAt | date: 'short' }}</p>
+                  <h4 class="task-title">{{ task.task_name }}</h4>
+                  <p class="task-description-preview">{{ task.task_description }}</p>
+                  <p class="task-date">{{ task.created_at | date: 'short' }}</p>
                 </div>
                 <div class="task-actions" (click)="$event.stopPropagation()">
                   @if (getNextStatus(task.status)) {
                     <button
                       class="action-btn move-btn"
-                      (click)="updateTaskStatus(task.id, getNextStatus(task.status)!)"
+                      (click)="updateTaskStatus(task.task_id, getNextStatus(task.status)!)"
                       title="Move to {{ getNextStatus(task.status) }}"
                     >
                       <svg
@@ -122,7 +122,7 @@
                   }
                   <button
                     class="action-btn delete-btn"
-                    (click)="deleteTask(task.id)"
+                    (click)="deleteTask(task.task_id)"
                     title="Delete task"
                   >
                     <svg
@@ -175,18 +175,18 @@
               <p>No ongoing tasks</p>
             </div>
           } @else {
-            @for (task of ongoingTasks(); track task.id) {
+            @for (task of ongoingTasks(); track task.task_id) {
               <div class="task-card" (click)="openTaskDetail(task)">
                 <div class="task-content">
-                  <h4 class="task-title">{{ task.title }}</h4>
-                  <p class="task-description-preview">{{ task.description }}</p>
-                  <p class="task-date">{{ task.createdAt | date: 'short' }}</p>
+                  <h4 class="task-title">{{ task.task_name }}</h4>
+                  <p class="task-description-preview">{{ task.task_description }}</p>
+                  <p class="task-date">{{ task.created_at | date: 'short' }}</p>
                 </div>
                 <div class="task-actions" (click)="$event.stopPropagation()">
                   @if (getPreviousStatus(task.status)) {
                     <button
                       class="action-btn back-btn"
-                      (click)="updateTaskStatus(task.id, getPreviousStatus(task.status)!)"
+                      (click)="updateTaskStatus(task.task_id, getPreviousStatus(task.status)!)"
                       title="Move back to {{ getPreviousStatus(task.status) }}"
                     >
                       <svg
@@ -208,7 +208,7 @@
                   @if (getNextStatus(task.status)) {
                     <button
                       class="action-btn move-btn"
-                      (click)="updateTaskStatus(task.id, getNextStatus(task.status)!)"
+                      (click)="updateTaskStatus(task.task_id, getNextStatus(task.status)!)"
                       title="Move to {{ getNextStatus(task.status) }}"
                     >
                       <svg
@@ -229,7 +229,7 @@
                   }
                   <button
                     class="action-btn delete-btn"
-                    (click)="deleteTask(task.id)"
+                    (click)="deleteTask(task.task_id)"
                     title="Delete task"
                   >
                     <svg
@@ -282,18 +282,18 @@
               <p>No completed tasks</p>
             </div>
           } @else {
-            @for (task of completedTasks(); track task.id) {
+            @for (task of completedTasks(); track task.task_id) {
               <div class="task-card completed" (click)="openTaskDetail(task)">
                 <div class="task-content">
-                  <h4 class="task-title">{{ task.title }}</h4>
-                  <p class="task-description-preview">{{ task.description }}</p>
-                  <p class="task-date">{{ task.createdAt | date: 'short' }}</p>
+                  <h4 class="task-title">{{ task.task_name }}</h4>
+                  <p class="task-description-preview">{{ task.task_description }}</p>
+                  <p class="task-date">{{ task.created_at | date: 'short' }}</p>
                 </div>
                 <div class="task-actions" (click)="$event.stopPropagation()">
                   @if (getPreviousStatus(task.status)) {
                     <button
                       class="action-btn back-btn"
-                      (click)="updateTaskStatus(task.id, getPreviousStatus(task.status)!)"
+                      (click)="updateTaskStatus(task.task_id, getPreviousStatus(task.status)!)"
                       title="Move back to {{ getPreviousStatus(task.status) }}"
                     >
                       <svg
@@ -314,7 +314,7 @@
                   }
                   <button
                     class="action-btn delete-btn"
-                    (click)="deleteTask(task.id)"
+                    (click)="deleteTask(task.task_id)"
                     title="Delete task"
                   >
                     <svg
@@ -375,17 +375,17 @@
         <div class="modal-body">
           <div class="detail-section">
             <h3 class="detail-label">Title</h3>
-            <p class="detail-value">{{ selectedTask()!.title }}</p>
+            <p class="detail-value">{{ selectedTask()!.task_name }}</p>
           </div>
 
           <div class="detail-section">
             <h3 class="detail-label">Description</h3>
-            <p class="detail-value description">{{ selectedTask()!.description }}</p>
+            <p class="detail-value description">{{ selectedTask()!.task_description }}</p>
           </div>
 
           <div class="detail-section">
             <h3 class="detail-label">Created At</h3>
-            <p class="detail-value">{{ selectedTask()!.createdAt | date: 'medium' }}</p>
+            <p class="detail-value">{{ selectedTask()!.created_at | date: 'medium' }}</p>
           </div>
         </div>
 

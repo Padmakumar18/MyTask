@@ -1,12 +1,11 @@
 import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { LoginModel, RegisterModel, User, UserEntity } from '../../models/auth.model';
-import * as bcrypt from 'bcryptjs';
+import { LoginModel, RegisterModel, UserEntity } from '../../models/auth.model';
 import { toast } from 'ngx-sonner';
-import { SupabaseService } from '../../services/supabase';
-import { UserService } from '../../services/user.service';
 import { Router } from '@angular/router';
+import { AuthService } from '../../services/core/auth.service';
+import { UserService } from '../../services/user.service';
 
 @Component({
   selector: 'app-auth',
@@ -16,102 +15,66 @@ import { Router } from '@angular/router';
   styleUrl: './auth.css',
 })
 export class Auth {
-  private readonly userService = inject(UserService);
-  isLoginMode = signal(true);
+  private fb = inject(FormBuilder);
+  private authService = inject(AuthService);
+  private userService = inject(UserService);
+  private router = inject(Router);
+
   loginForm: FormGroup;
   registerForm: FormGroup;
 
+  isLoginMode = signal(true);
   showPassword = signal(false);
   showConfirmPassword = signal(false);
 
-  constructor(
-    private fb: FormBuilder,
-    private supabaseService: SupabaseService,
-    private router: Router,
-  ) {
+  constructor() {
     this.loginForm = this.fb.group({
       email: ['test@gmail.com', [Validators.required, Validators.email]],
-      password: ['123456', [Validators.required, Validators.minLength(6)]],
+      password: ['123456', [Validators.required]],
     });
 
     this.registerForm = this.fb.group({
-      name: ['Test', [Validators.required, Validators.minLength(2)]],
+      name: ['test', [Validators.required]],
       email: ['test@gmail.com', [Validators.required, Validators.email]],
-      password: ['123456', [Validators.required, Validators.minLength(6)]],
+      password: ['123456', [Validators.required]],
       confirmPassword: ['123456', [Validators.required]],
     });
   }
 
   async onLogin() {
     if (!this.loginForm.valid) return;
-
+    const loadingToast = toast.loading('Logging in...');
     const loginData: LoginModel = this.loginForm.value;
-    const supabase = this.supabaseService.getClient();
-
-    const { data, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('email', loginData.email)
-      .single();
-
-    if (error || !data) {
-      toast.error('User not found');
+    const response = await this.authService.login(loginData);
+    if (typeof response === 'string') {
+      toast.error(response);
       return;
     }
-    console.log(data);
-
-    const isValid = await this.verifyPassword(loginData.password, data.password_hash);
-
-    if (!isValid) {
-      toast.error('Invalid password');
-      return;
-    }
-
-    const registerdUser: UserEntity = data;
-
-    toast.success('Login successful');
-    console.log('Logged in user:', data);
-    this.setUser(registerdUser.user_id, registerdUser.email);
-
+    const user: UserEntity = response;
+    this.setUser(user.user_id, user.email);
+    toast.success('Login successful', {
+      id: loadingToast,
+    });
     this.router.navigate(['/']);
   }
 
   async onRegister() {
     if (!this.registerForm.valid) return;
-
     const registerData: RegisterModel = this.registerForm.value;
-
-    if (registerData.password !== registerData.confirmPassword) {
-      toast.error('Passwords do not match');
+    const loadingToast = toast.loading('Loading...');
+    const response = await this.authService.register(registerData);
+    if (typeof response === 'string') {
+      toast.error(response);
       return;
     }
-
-    const supabase = this.supabaseService.getClient();
-
-    const hashAndSalt = await this.hashPassword(registerData.password);
-
-    const user: User = {
-      email: registerData.email,
-      name: registerData.name,
-      password_hash: hashAndSalt.hash,
-      salt: hashAndSalt.salt,
-    };
-
-    const { data, error } = await supabase.from('users').insert([user]).select().single();
-
-    if (error) {
-      toast.error('Registration failed');
-      console.error(error);
-      return;
-    }
-
-    const createdUser: UserEntity = data;
-
-    toast.success('User registered successfully');
+    const user: UserEntity = response;
+    this.setUser(user.user_id, user.email);
+    toast.success('User registered successfully', {
+      id: loadingToast,
+    });
     this.registerForm.reset();
     this.isLoginMode.set(true);
-
-    this.setUser(createdUser.user_id, createdUser.email);
+    this.router.navigate(['/']);
   }
 
   setUser(userId: string, email: string) {
@@ -120,20 +83,8 @@ export class Auth {
     this.userService.setUserEmail(email);
   }
 
-  async hashPassword(password: string) {
-    const salt = bcrypt.genSaltSync(10);
-    const hash = bcrypt.hashSync(password, salt);
-    return { hash, salt };
-  }
-
-  async verifyPassword(inputPassword: string, storedHash: string) {
-    return bcrypt.compareSync(inputPassword, storedHash);
-  }
-
   toggleMode() {
     this.isLoginMode.set(!this.isLoginMode());
-    this.showPassword.set(false);
-    this.showConfirmPassword.set(false);
   }
 
   togglePasswordVisibility() {

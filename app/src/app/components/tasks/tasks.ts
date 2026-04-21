@@ -1,8 +1,10 @@
-import { Component, signal, computed } from '@angular/core';
+import { Component, signal, computed, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Task, TaskStatus } from '../../models/task.model';
 import { toast } from 'ngx-sonner';
+import { TaskService } from '../../services/core/task.service';
+import { UserService } from '../../services/user.service';
 
 @Component({
   selector: 'app-tasks',
@@ -10,7 +12,10 @@ import { toast } from 'ngx-sonner';
   templateUrl: './tasks.html',
   styleUrl: './tasks.css',
 })
-export class Tasks {
+export class Tasks implements OnInit {
+  private taskService = inject(TaskService);
+  private userService = inject(UserService);
+
   tasks = signal<Task[]>([]);
   isAddingTask = signal(false);
   selectedTask = signal<Task | null>(null);
@@ -19,22 +24,34 @@ export class Tasks {
   taskToDelete = signal<string | null>(null);
 
   taskForm: FormGroup;
-  taskStatuses: TaskStatus[] = ['Pending', 'Ongoing', 'Completed'];
 
-  pendingTasks = computed(() => this.tasks().filter((t) => t.status === 'Pending'));
-  ongoingTasks = computed(() => this.tasks().filter((t) => t.status === 'Ongoing'));
-  completedTasks = computed(() => this.tasks().filter((t) => t.status === 'Completed'));
+  pendingTasks = computed(() => this.tasks().filter((t) => t.status === 'pending'));
+  ongoingTasks = computed(() => this.tasks().filter((t) => t.status === 'ongoing'));
+  completedTasks = computed(() => this.tasks().filter((t) => t.status === 'completed'));
 
   constructor(private fb: FormBuilder) {
     this.taskForm = this.fb.group({
-      title: ['', [Validators.required, Validators.minLength(3)]],
-      description: ['', [Validators.required, Validators.minLength(10)]],
+      title: ['', Validators.required],
+      description: ['', Validators.required],
     });
+  }
+
+  async ngOnInit() {
+    await this.loadTasks();
+  }
+
+  async loadTasks() {
+    try {
+      const userId = this.userService.getUserId();
+      const tasks = await this.taskService.getTasks(userId);
+      this.tasks.set(tasks);
+    } catch (error) {
+      toast.error('Failed to load tasks');
+    }
   }
 
   showAddTaskForm() {
     this.isAddingTask.set(true);
-    this.taskForm.reset();
   }
 
   cancelAddTask() {
@@ -42,26 +59,38 @@ export class Tasks {
     this.taskForm.reset();
   }
 
-  addTask() {
-    if (this.taskForm.invalid) {
-      this.taskForm.markAllAsTouched();
-      toast.error('Please fill in all required fields correctly');
-      return;
+  async addTask() {
+    if (this.taskForm.invalid) return;
+
+    try {
+      const userId = this.userService.getUserId();
+
+      const task = await this.taskService.addTask(
+        userId,
+        this.taskForm.value.title,
+        this.taskForm.value.description,
+      );
+
+      this.tasks.update((t) => [task, ...t]);
+
+      toast.success('Task created');
+
+      this.cancelAddTask();
+    } catch {
+      toast.error('Failed to create task');
     }
+  }
 
-    const formValue = this.taskForm.value;
-    const newTask: Task = {
-      id: Date.now().toString(),
-      title: formValue.title.trim(),
-      description: formValue.description.trim(),
-      status: 'Pending',
-      createdAt: new Date(),
-    };
+  async updateTaskStatus(taskId: string, status: TaskStatus) {
+    try {
+      const updated = await this.taskService.updateTaskStatus(taskId, status);
 
-    this.tasks.update((tasks) => [...tasks, newTask]);
-    this.isAddingTask.set(false);
-    this.taskForm.reset();
-    toast.success('Task added successfully!');
+      this.tasks.update((tasks) => tasks.map((t) => (t.task_id === taskId ? updated : t)));
+
+      toast.success('Task updated');
+    } catch {
+      toast.error('Update failed');
+    }
   }
 
   openTaskDetail(task: Task) {
@@ -74,19 +103,43 @@ export class Tasks {
     this.selectedTask.set(null);
   }
 
-  updateTaskStatus(taskId: string, newStatus: TaskStatus) {
-    const task = this.tasks().find((t) => t.id === taskId);
-    this.tasks.update((tasks) =>
-      tasks.map((task) => (task.id === taskId ? { ...task, status: newStatus } : task)),
-    );
-    if (task) {
-      toast.success(`Task moved to ${newStatus}!`);
-    }
+  async updateTaskStatusFromDetail(status: TaskStatus) {
+    const task = this.selectedTask();
+    if (!task) return;
+
+    await this.updateTaskStatus(task.task_id, status);
+    this.selectedTask.set({ ...task, status });
   }
 
-  showDeleteConfirmation(taskId: string) {
+  deleteTaskFromDetail() {
+    const task = this.selectedTask();
+    if (!task) return;
+
+    this.taskToDelete.set(task.task_id);
+    this.isDeleteConfirmOpen.set(true);
+  }
+
+  deleteTask(taskId: string) {
     this.taskToDelete.set(taskId);
     this.isDeleteConfirmOpen.set(true);
+  }
+
+  async confirmDelete() {
+    const taskId = this.taskToDelete();
+    if (!taskId) return;
+
+    try {
+      await this.taskService.deleteTask(taskId);
+
+      this.tasks.update((tasks) => tasks.filter((t) => t.task_id !== taskId));
+
+      toast.success('Task deleted');
+
+      this.closeTaskDetail();
+      this.cancelDelete();
+    } catch {
+      toast.error('Delete failed');
+    }
   }
 
   cancelDelete() {
@@ -94,53 +147,39 @@ export class Tasks {
     this.taskToDelete.set(null);
   }
 
-  confirmDelete() {
-    const taskId = this.taskToDelete();
-    if (taskId) {
-      const task = this.tasks().find((t) => t.id === taskId);
-      this.tasks.update((tasks) => tasks.filter((task) => task.id !== taskId));
-      if (this.selectedTask()?.id === taskId) {
-        this.closeTaskDetail();
-      }
-      if (task) {
-        toast.success('Task deleted successfully!');
-      }
+  getNextStatus(status: TaskStatus): TaskStatus | null {
+    const statusFlow: Record<TaskStatus, TaskStatus | null> = {
+      pending: 'ongoing',
+      ongoing: 'completed',
+      completed: null,
+    };
+    return statusFlow[status];
+  }
+
+  getPreviousStatus(status: TaskStatus): TaskStatus | null {
+    const statusFlow: Record<TaskStatus, TaskStatus | null> = {
+      pending: null,
+      ongoing: 'pending',
+      completed: 'ongoing',
+    };
+    return statusFlow[status];
+  }
+
+  async editTask(taskId: string) {
+    if (this.taskForm.invalid) return;
+
+    try {
+      const updated = await this.taskService.updateTask(
+        taskId,
+        this.taskForm.value.title,
+        this.taskForm.value.description,
+      );
+
+      this.tasks.update((tasks) => tasks.map((t) => (t.task_id === taskId ? updated : t)));
+
+      toast.success('Task updated');
+    } catch {
+      toast.error('Update failed');
     }
-    this.isDeleteConfirmOpen.set(false);
-    this.taskToDelete.set(null);
-  }
-
-  deleteTask(taskId: string) {
-    this.showDeleteConfirmation(taskId);
-  }
-
-  deleteTaskFromDetail() {
-    const taskId = this.selectedTask()?.id;
-    if (taskId) {
-      this.showDeleteConfirmation(taskId);
-    }
-  }
-
-  updateTaskStatusFromDetail(newStatus: TaskStatus) {
-    const taskId = this.selectedTask()?.id;
-    if (taskId) {
-      this.updateTaskStatus(taskId, newStatus);
-      const updatedTask = this.tasks().find((t) => t.id === taskId);
-      if (updatedTask) {
-        this.selectedTask.set(updatedTask);
-      }
-    }
-  }
-
-  getNextStatus(currentStatus: TaskStatus): TaskStatus | null {
-    if (currentStatus === 'Pending') return 'Ongoing';
-    if (currentStatus === 'Ongoing') return 'Completed';
-    return null;
-  }
-
-  getPreviousStatus(currentStatus: TaskStatus): TaskStatus | null {
-    if (currentStatus === 'Completed') return 'Ongoing';
-    if (currentStatus === 'Ongoing') return 'Pending';
-    return null;
   }
 }

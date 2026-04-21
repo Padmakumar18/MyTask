@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { SupabaseService } from '../supabase';
-import { LoginModel, UserEntity } from '../../models/auth.model';
-import bcrypt from 'bcryptjs';
+import { LoginModel, RegisterModel, User, UserEntity } from '../../models/auth.model';
+import * as bcrypt from 'bcryptjs';
 
 @Injectable({
   providedIn: 'root',
@@ -9,8 +9,9 @@ import bcrypt from 'bcryptjs';
 export class AuthService {
   constructor(private supabaseService: SupabaseService) {}
 
-  async Login(loginData: LoginModel) {
+  async login(loginData: LoginModel): Promise<UserEntity | string> {
     const supabase = this.supabaseService.getClient();
+
     const { data, error } = await supabase
       .from('users')
       .select('*')
@@ -18,11 +19,11 @@ export class AuthService {
       .single();
 
     if (error || !data) {
-      //   toast.error('User not found');
       return 'User not found';
     }
 
-    const isValid = await this.verifyPassword(loginData.password, data.password_hash);
+    const isValid = bcrypt.compareSync(loginData.password, data.password_hash);
+
     if (!isValid) {
       return 'Invalid password';
     }
@@ -30,13 +31,29 @@ export class AuthService {
     return data;
   }
 
-  private async hashPassword(password: string) {
-    const salt = bcrypt.genSaltSync(10);
-    const hash = bcrypt.hashSync(password, salt);
-    return { hash, salt };
-  }
+  async register(registerData: RegisterModel): Promise<UserEntity | string> {
+    if (registerData.password !== registerData.confirmPassword) {
+      return 'Passwords do not match';
+    }
 
-  private async verifyPassword(inputPassword: string, storedHash: string) {
-    return bcrypt.compareSync(inputPassword, storedHash);
+    const supabase = this.supabaseService.getClient();
+
+    const salt = bcrypt.genSaltSync(10);
+    const hash = bcrypt.hashSync(registerData.password, salt);
+
+    const user: User = {
+      email: registerData.email,
+      name: registerData.name,
+      password_hash: hash,
+      salt: salt,
+    };
+
+    const { data, error } = await supabase.from('users').insert([user]).select().single();
+
+    if (error) {
+      return 'Registration failed';
+    }
+
+    return data;
   }
 }

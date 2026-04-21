@@ -1,9 +1,10 @@
-export type TaskStatus = 'Pending' | 'Ongoing' | 'Completed';
+export type TaskStatus = 'pending' | 'ongoing' | 'completed';
 
 export interface Task {
-  id: string;
-  title: string;
-  description: string;
+  task_id: string;
+  user_id: string;
+  task_name: string;
+  task_description: string;
   status: TaskStatus;
-  createdAt: Date;
+  created_at: string;
 }
