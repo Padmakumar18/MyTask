@@ -29,15 +29,15 @@ export class Auth {
 
   constructor() {
     this.loginForm = this.fb.group({
-      email: ['test@gmail.com', [Validators.required, Validators.email]],
-      password: ['123456', [Validators.required]],
+      email: ['', [Validators.required, Validators.email]],
+      password: ['', [Validators.required]],
     });
 
     this.registerForm = this.fb.group({
-      name: ['test', [Validators.required]],
-      email: ['test@gmail.com', [Validators.required, Validators.email]],
-      password: ['123456', [Validators.required]],
-      confirmPassword: ['123456', [Validators.required]],
+      name: ['', [Validators.required]],
+      email: ['', [Validators.required, Validators.email]],
+      password: ['', [Validators.required]],
+      confirmPassword: ['', [Validators.required]],
     });
   }
 
