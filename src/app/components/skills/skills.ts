@@ -57,7 +57,7 @@ export class Skills implements OnInit {
       id: skill.skill_id,
       name: skill.skill_name,
       whereToLearn: skill.where_to_learn || '',
-      status: 'Pending', // All skills from DB are pending by default
+      status: skill.status, // Use actual status from database
       createdAt: new Date(skill.created_at),
     };
   }
@@ -123,6 +123,7 @@ export class Skills implements OnInit {
       await this.skillsService.addSkill(userId, {
         skill_name: formValue.name.trim(),
         where_to_learn: formValue.whereToLearn?.trim() || undefined,
+        status: 'Pending', // Default status
       });
 
       await this.loadSkills();
@@ -224,9 +225,28 @@ export class Skills implements OnInit {
     this.showDeleteSkillConfirmation(skillId);
   }
 
-  toggleSkillStatus(skillId: string) {
-    // This method is called from the template but we don't have a status field in the database
-    // For now, we'll just show a message that this feature requires database schema update
-    toast.info('Status toggle feature requires adding a status column to the skills table');
+  async toggleSkillStatus(skillId: string) {
+    const userId = this.userService.getUserId();
+    if (!userId) {
+      toast.error('User not logged in. Please log in first.');
+      return;
+    }
+
+    const skill = this.skills().find((s) => s.id === skillId);
+    if (!skill) return;
+
+    const newStatus: 'Pending' | 'Completed' = skill.status === 'Pending' ? 'Completed' : 'Pending';
+
+    this.isLoading.set(true);
+    try {
+      await this.skillsService.updateSkillStatus(skillId, newStatus);
+      await this.loadSkills();
+      toast.success(`Skill marked as ${newStatus}!`);
+    } catch (error) {
+      toast.error('Failed to update skill status');
+      console.error(error);
+    } finally {
+      this.isLoading.set(false);
+    }
   }
 }

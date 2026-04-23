@@ -32,6 +32,7 @@ export class SkillsService {
           user_id: userId,
           skill_name: skill.skill_name,
           where_to_learn: skill.where_to_learn || null,
+          status: skill.status || 'Pending',
         },
       ])
       .select()
@@ -48,10 +49,26 @@ export class SkillsService {
     const updateData: any = {};
     if (updates.skill_name !== undefined) updateData.skill_name = updates.skill_name;
     if (updates.where_to_learn !== undefined) updateData.where_to_learn = updates.where_to_learn;
+    if (updates.status !== undefined) updateData.status = updates.status;
 
     const { data, error } = await supabase
       .from('skills')
       .update(updateData)
+      .eq('skill_id', skillId)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    return data as Skill;
+  }
+
+  async updateSkillStatus(skillId: string, status: 'Pending' | 'Completed'): Promise<Skill> {
+    const supabase = this.supabaseService.getClient();
+
+    const { data, error } = await supabase
+      .from('skills')
+      .update({ status })
       .eq('skill_id', skillId)
       .select()
       .single();
