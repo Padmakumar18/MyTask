@@ -1,8 +1,19 @@
-import { Component, signal, computed } from '@angular/core';
+import { Component, OnInit, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Skill, SkillStatus } from '../../models/skill.model';
+import { SkillsService } from '../../services/core/skills.service';
+import { Skill } from '../../models/skill.model';
+import { UserService } from '../../services/user.service';
 import { toast } from 'ngx-sonner';
+
+// UI-friendly skill interface for template
+interface SkillUI {
+  id: string;
+  name: string;
+  whereToLearn: string;
+  status: 'Pending' | 'Completed';
+  createdAt: Date;
+}
 
 @Component({
   selector: 'app-skills',
@@ -10,24 +21,73 @@ import { toast } from 'ngx-sonner';
   templateUrl: './skills.html',
   styleUrl: './skills.css',
 })
-export class Skills {
-  skills = signal<Skill[]>([]);
+export class Skills implements OnInit {
+  private rawSkills = signal<Skill[]>([]);
   isAddingSkill = signal(false);
   isEditingSkill = signal(false);
-  selectedSkill = signal<Skill | null>(null);
+  selectedSkill = signal<SkillUI | null>(null);
   skillToDelete = signal<string | null>(null);
   isDeleteSkillConfirmOpen = signal(false);
+  isLoading = signal(false);
 
   skillForm: FormGroup;
 
+  private fb = inject(FormBuilder);
+  private skillsService = inject(SkillsService);
+  private userService = inject(UserService);
+
+  // Transform database skills to UI-friendly format
+  skills = computed(() => {
+    return this.rawSkills().map((skill) => this.transformSkillToUI(skill));
+  });
+
+  // Computed properties for pending and completed skills
   pendingSkills = computed(() => this.skills().filter((s) => s.status === 'Pending'));
   completedSkills = computed(() => this.skills().filter((s) => s.status === 'Completed'));
 
-  constructor(private fb: FormBuilder) {
+  constructor() {
     this.skillForm = this.fb.group({
       name: ['', [Validators.required, Validators.minLength(2)]],
-      whereToLearn: ['', [Validators.required, Validators.minLength(5)]],
+      whereToLearn: [''],
     });
+  }
+
+  private transformSkillToUI(skill: Skill): SkillUI {
+    return {
+      id: skill.skill_id,
+      name: skill.skill_name,
+      whereToLearn: skill.where_to_learn || '',
+      status: 'Pending', // All skills from DB are pending by default
+      createdAt: new Date(skill.created_at),
+    };
+  }
+
+  async ngOnInit() {
+    // Get userId from UserService
+    const userId = this.userService.getUserId();
+    if (userId) {
+      console.log('Skills - User ID loaded:', userId);
+      await this.loadSkills();
+    } else {
+      console.warn('Skills - No user found');
+      toast.warning('Please log in to manage skills');
+    }
+  }
+
+  async loadSkills() {
+    const userId = this.userService.getUserId();
+    if (!userId) return;
+
+    this.isLoading.set(true);
+    try {
+      const skills = await this.skillsService.getSkills(userId);
+      this.rawSkills.set(skills);
+    } catch (error) {
+      toast.error('Failed to load skills');
+      console.error(error);
+    } finally {
+      this.isLoading.set(false);
+    }
   }
 
   showAddSkillForm() {
@@ -44,39 +104,56 @@ export class Skills {
     this.skillForm.reset();
   }
 
-  addSkill() {
+  async addSkill() {
+    const userId = this.userService.getUserId();
+    if (!userId) {
+      toast.error('User not logged in. Please log in first.');
+      return;
+    }
+
     if (this.skillForm.invalid) {
       this.skillForm.markAllAsTouched();
       toast.error('Please fill in all required fields correctly');
       return;
     }
 
-    const formValue = this.skillForm.value;
-    const newSkill: Skill = {
-      id: Date.now().toString(),
-      name: formValue.name.trim(),
-      whereToLearn: formValue.whereToLearn.trim(),
-      status: 'Pending',
-      createdAt: new Date(),
-    };
+    this.isLoading.set(true);
+    try {
+      const formValue = this.skillForm.value;
+      await this.skillsService.addSkill(userId, {
+        skill_name: formValue.name.trim(),
+        where_to_learn: formValue.whereToLearn?.trim() || undefined,
+      });
 
-    this.skills.update((skills) => [...skills, newSkill]);
-    this.isAddingSkill.set(false);
-    this.skillForm.reset();
-    toast.success('Skill added successfully!');
+      await this.loadSkills();
+      this.isAddingSkill.set(false);
+      this.skillForm.reset();
+      toast.success('Skill added successfully!');
+    } catch (error) {
+      toast.error('Failed to add skill');
+      console.error(error);
+    } finally {
+      this.isLoading.set(false);
+    }
   }
 
-  showEditSkillForm(skill: Skill) {
+  showEditSkillForm(skill: SkillUI) {
     this.selectedSkill.set(skill);
     this.isEditingSkill.set(true);
     this.isAddingSkill.set(true);
     this.skillForm.patchValue({
       name: skill.name,
-      whereToLearn: skill.whereToLearn,
+      whereToLearn: skill.whereToLearn || '',
     });
   }
 
-  updateSkill() {
+  async updateSkill() {
+    const userId = this.userService.getUserId();
+    if (!userId) {
+      toast.error('User not logged in. Please log in first.');
+      return;
+    }
+
     if (this.skillForm.invalid) {
       this.skillForm.markAllAsTouched();
       toast.error('Please fill in all required fields correctly');
@@ -86,24 +163,26 @@ export class Skills {
     const skillId = this.selectedSkill()?.id;
     if (!skillId) return;
 
-    const formValue = this.skillForm.value;
-    this.skills.update((skills) =>
-      skills.map((skill) =>
-        skill.id === skillId
-          ? {
-              ...skill,
-              name: formValue.name.trim(),
-              whereToLearn: formValue.whereToLearn.trim(),
-            }
-          : skill,
-      ),
-    );
+    this.isLoading.set(true);
+    try {
+      const formValue = this.skillForm.value;
+      await this.skillsService.updateSkill(skillId, {
+        skill_name: formValue.name.trim(),
+        where_to_learn: formValue.whereToLearn?.trim() || undefined,
+      });
 
-    this.isAddingSkill.set(false);
-    this.isEditingSkill.set(false);
-    this.selectedSkill.set(null);
-    this.skillForm.reset();
-    toast.success('Skill updated successfully!');
+      await this.loadSkills();
+      this.isAddingSkill.set(false);
+      this.isEditingSkill.set(false);
+      this.selectedSkill.set(null);
+      this.skillForm.reset();
+      toast.success('Skill updated successfully!');
+    } catch (error) {
+      toast.error('Failed to update skill');
+      console.error(error);
+    } finally {
+      this.isLoading.set(false);
+    }
   }
 
   showDeleteSkillConfirmation(skillId: string) {
@@ -116,38 +195,38 @@ export class Skills {
     this.skillToDelete.set(null);
   }
 
-  confirmDeleteSkill() {
+  async confirmDeleteSkill() {
     const skillId = this.skillToDelete();
-    if (skillId) {
-      const skill = this.skills().find((s) => s.id === skillId);
-      this.skills.update((skills) => skills.filter((skill) => skill.id !== skillId));
-      if (skill) {
-        toast.success('Skill deleted successfully!');
-      }
+    if (!skillId) return;
+
+    const userId = this.userService.getUserId();
+    if (!userId) {
+      toast.error('User not logged in. Please log in first.');
+      return;
     }
-    this.isDeleteSkillConfirmOpen.set(false);
-    this.skillToDelete.set(null);
+
+    this.isLoading.set(true);
+    try {
+      await this.skillsService.deleteSkill(skillId);
+      await this.loadSkills();
+      toast.success('Skill deleted successfully!');
+    } catch (error) {
+      toast.error('Failed to delete skill');
+      console.error(error);
+    } finally {
+      this.isLoading.set(false);
+      this.isDeleteSkillConfirmOpen.set(false);
+      this.skillToDelete.set(null);
+    }
   }
 
   deleteSkill(skillId: string) {
     this.showDeleteSkillConfirmation(skillId);
   }
 
-  updateSkillStatus(skillId: string, newStatus: SkillStatus) {
-    const skill = this.skills().find((s) => s.id === skillId);
-    this.skills.update((skills) =>
-      skills.map((skill) => (skill.id === skillId ? { ...skill, status: newStatus } : skill)),
-    );
-    if (skill) {
-      toast.success(`Skill moved to ${newStatus}!`);
-    }
-  }
-
   toggleSkillStatus(skillId: string) {
-    const skill = this.skills().find((s) => s.id === skillId);
-    if (skill) {
-      const newStatus: SkillStatus = skill.status === 'Pending' ? 'Completed' : 'Pending';
-      this.updateSkillStatus(skillId, newStatus);
-    }
+    // This method is called from the template but we don't have a status field in the database
+    // For now, we'll just show a message that this feature requires database schema update
+    toast.info('Status toggle feature requires adding a status column to the skills table');
   }
 }
