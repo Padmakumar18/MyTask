@@ -63,12 +63,14 @@ export class CartService {
     return data as Cart;
   }
 
-  async deleteCartItem(cartId: string): Promise<void> {
+  async deleteCartItem(cartId: string) {
+    console.log(cartId);
     const supabase = this.supabaseService.getClient();
 
-    const { error } = await supabase.from('cart').delete().eq('cart_id', cartId);
+    const { data, error } = await supabase.from('cart').delete().eq('cart_id', cartId).select();
 
     if (error) throw error;
+    return data;
   }
 
   async getTotalPrice(userId: string): Promise<number> {
