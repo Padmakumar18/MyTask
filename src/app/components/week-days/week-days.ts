@@ -40,10 +40,14 @@ export class WeekDays implements OnInit {
     return this.tasks().filter((task) => task.weekday_id === selectedDay);
   });
 
+  // Separate ongoing and completed tasks
+  ongoingTasks = computed(() => this.filteredTasks().filter((t) => !t.is_completed));
+  completedTasksList = computed(() => this.filteredTasks().filter((t) => t.is_completed));
+
   // Statistics for selected day
   totalTasks = computed(() => this.filteredTasks().length);
-  completedTasks = computed(() => this.filteredTasks().filter((t) => t.is_completed).length);
-  pendingTasks = computed(() => this.filteredTasks().filter((t) => !t.is_completed).length);
+  completedTasks = computed(() => this.completedTasksList().length);
+  pendingTasks = computed(() => this.ongoingTasks().length);
 
   // Get selected day name
   selectedDayName = computed(() => {

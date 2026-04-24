@@ -103,7 +103,7 @@
     </div>
   }
 
-  <!-- Tasks Grid -->
+  <!-- Tasks Sections -->
   <div class="tasks-container">
     @if (filteredTasks().length === 0) {
       <div class="empty-state">
@@ -123,99 +123,201 @@
           <line x1="9" y1="15" x2="15" y2="15"></line>
         </svg>
         <p>No tasks for {{ selectedDayName() }}</p>
-        <button class="add-task-btn" (click)="showAddTaskForm()" style="margin-top: 1rem">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <line x1="12" y1="5" x2="12" y2="19"></line>
-            <line x1="5" y1="12" x2="19" y2="12"></line>
-          </svg>
-          Add Your First Task
-        </button>
       </div>
     } @else {
-      <div class="tasks-grid">
-        @for (task of filteredTasks(); track task.task_id) {
-          <div
-            class="task-card"
-            [class.completed]="task.is_completed"
-            (click)="showTaskDetail(task)"
-          >
-            <div class="task-card-header">
-              <div class="task-checkbox" (click)="$event.stopPropagation()">
-                <input
-                  type="checkbox"
-                  [checked]="task.is_completed"
-                  (change)="toggleTaskCompletion(task)"
-                  [id]="'task-' + task.task_id"
-                />
-                <label [for]="'task-' + task.task_id" class="checkbox-label"></label>
-              </div>
-              <h3 class="task-card-title">{{ task.title }}</h3>
+      <!-- Ongoing Tasks Section -->
+      @if (ongoingTasks().length > 0) {
+        <div class="task-section">
+          <div class="section-header ongoing-header">
+            <div class="section-title-wrapper">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="section-icon"
+              >
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+              </svg>
+              <h2 class="section-title">Ongoing Tasks</h2>
             </div>
-
-            @if (task.description) {
-              <p class="task-card-description">{{ task.description }}</p>
-            }
-
-            <div class="task-card-footer">
-              <span class="task-date">{{ task.created_at | date: 'short' }}</span>
-              <div class="task-card-actions" (click)="$event.stopPropagation()">
-                <button
-                  class="action-btn edit-btn"
-                  (click)="showEditTaskForm(task)"
-                  title="Edit task"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  >
-                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                  </svg>
-                </button>
-                <button
-                  class="action-btn delete-btn"
-                  (click)="deleteTask(task.task_id)"
-                  title="Delete task"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  >
-                    <polyline points="3 6 5 6 21 6"></polyline>
-                    <path
-                      d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
-                    ></path>
-                  </svg>
-                </button>
-              </div>
-            </div>
+            <span class="section-count">{{ ongoingTasks().length }}</span>
           </div>
-        }
-      </div>
+          <div class="tasks-grid">
+            @for (task of ongoingTasks(); track task.task_id) {
+              <div class="task-card" (click)="showTaskDetail(task)">
+                <div class="task-card-header">
+                  <div class="task-checkbox" (click)="$event.stopPropagation()">
+                    <input
+                      type="checkbox"
+                      [checked]="task.is_completed"
+                      (change)="toggleTaskCompletion(task)"
+                      [id]="'task-' + task.task_id"
+                    />
+                    <label [for]="'task-' + task.task_id" class="checkbox-label"></label>
+                  </div>
+                  <h3 class="task-card-title">{{ task.title }}</h3>
+                </div>
+
+                @if (task.description) {
+                  <p class="task-card-description">{{ task.description }}</p>
+                }
+
+                <div class="task-card-footer">
+                  <span class="task-date">{{ task.created_at | date: 'short' }}</span>
+                  <div class="task-card-actions" (click)="$event.stopPropagation()">
+                    <button
+                      class="action-btn edit-btn"
+                      (click)="showEditTaskForm(task)"
+                      title="Edit task"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                      </svg>
+                    </button>
+                    <button
+                      class="action-btn delete-btn"
+                      (click)="deleteTask(task.task_id)"
+                      title="Delete task"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path
+                          d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+                        ></path>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      }
+
+      <!-- Completed Tasks Section -->
+      @if (completedTasksList().length > 0) {
+        <div class="task-section">
+          <div class="section-header completed-header">
+            <div class="section-title-wrapper">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="section-icon"
+              >
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+              </svg>
+              <h2 class="section-title">Completed Tasks</h2>
+            </div>
+            <span class="section-count">{{ completedTasksList().length }}</span>
+          </div>
+          <div class="tasks-grid">
+            @for (task of completedTasksList(); track task.task_id) {
+              <div class="task-card completed" (click)="showTaskDetail(task)">
+                <div class="task-card-header">
+                  <div class="task-checkbox" (click)="$event.stopPropagation()">
+                    <input
+                      type="checkbox"
+                      [checked]="task.is_completed"
+                      (change)="toggleTaskCompletion(task)"
+                      [id]="'task-' + task.task_id"
+                    />
+                    <label [for]="'task-' + task.task_id" class="checkbox-label"></label>
+                  </div>
+                  <h3 class="task-card-title">{{ task.title }}</h3>
+                </div>
+
+                @if (task.description) {
+                  <p class="task-card-description">{{ task.description }}</p>
+                }
+
+                <div class="task-card-footer">
+                  <span class="task-date">{{ task.created_at | date: 'short' }}</span>
+                  <div class="task-card-actions" (click)="$event.stopPropagation()">
+                    <button
+                      class="action-btn edit-btn"
+                      (click)="showEditTaskForm(task)"
+                      title="Edit task"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                      </svg>
+                    </button>
+                    <button
+                      class="action-btn delete-btn"
+                      (click)="deleteTask(task.task_id)"
+                      title="Delete task"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path
+                          d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+                        ></path>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      }
     }
   </div>
 

@@ -1,27 +1,342 @@
 <div class="page-container">
+  <!-- Header -->
   <div class="content-header">
-    <h1 class="content-title">Events</h1>
-  </div>
-
-  <div class="section-content">
-    <div class="empty-state">
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="64"
-        height="64"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="1.5"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-      >
-        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-        <line x1="16" y1="2" x2="16" y2="6"></line>
-        <line x1="8" y1="2" x2="8" y2="6"></line>
-        <line x1="3" y1="10" x2="21" y2="10"></line>
-      </svg>
-      <p>No events scheduled</p>
+    <div class="header-top">
+      <h1 class="content-title">Events Calendar</h1>
+      @if (!isAddingEvent()) {
+        <button class="add-event-btn" (click)="showAddEventForm()">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          Add Event
+        </button>
+      }
     </div>
   </div>
+
+  <!-- Add/Edit Event Form -->
+  @if (isAddingEvent()) {
+    <div class="event-form-card">
+      <h3 class="form-title">{{ isEditingEvent() ? 'Edit Event' : 'Add New Event' }}</h3>
+      <form [formGroup]="eventForm" (ngSubmit)="isEditingEvent() ? updateEvent() : addEvent()">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="event-name" class="form-label">Event Name *</label>
+            <input
+              id="event-name"
+              type="text"
+              formControlName="event_name"
+              class="form-input"
+              placeholder="Enter event name..."
+            />
+            @if (eventForm.get('event_name')?.invalid && eventForm.get('event_name')?.touched) {
+              <span class="error-text">Event name is required (minimum 2 characters)</span>
+            }
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="event-date" class="form-label">Date *</label>
+            <input id="event-date" type="date" formControlName="event_date" class="form-input" />
+            @if (eventForm.get('event_date')?.invalid && eventForm.get('event_date')?.touched) {
+              <span class="error-text">Date is required</span>
+            }
+          </div>
+
+          <div class="form-group">
+            <label for="event-time" class="form-label">Time *</label>
+            <input id="event-time" type="time" formControlName="event_time" class="form-input" />
+            @if (eventForm.get('event_time')?.invalid && eventForm.get('event_time')?.touched) {
+              <span class="error-text">Time is required</span>
+            }
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="event-description" class="form-label">Description (Optional)</label>
+          <textarea
+            id="event-description"
+            formControlName="description"
+            class="form-textarea"
+            placeholder="Add event details..."
+            rows="3"
+          ></textarea>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn-primary" [disabled]="eventForm.invalid || isLoading()">
+            {{ isEditingEvent() ? 'Update Event' : 'Add Event' }}
+          </button>
+          <button type="button" class="btn-secondary" (click)="cancelEventForm()">Cancel</button>
+        </div>
+      </form>
+    </div>
+  }
+
+  <!-- Calendar -->
+  <div class="calendar-container">
+    <!-- Calendar Header -->
+    <div class="calendar-header">
+      <button class="nav-btn" (click)="previousMonth()" title="Previous month">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <polyline points="15 18 9 12 15 6"></polyline>
+        </svg>
+      </button>
+
+      <div class="calendar-title-wrapper">
+        <h2 class="calendar-title">{{ currentMonthYear() }}</h2>
+        <button class="today-btn" (click)="goToToday()">Today</button>
+      </div>
+
+      <button class="nav-btn" (click)="nextMonth()" title="Next month">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <polyline points="9 18 15 12 9 6"></polyline>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Week Days Header -->
+    <div class="calendar-weekdays">
+      @for (day of weekDays; track day) {
+        <div class="weekday-label">{{ day }}</div>
+      }
+    </div>
+
+    <!-- Calendar Grid -->
+    <div class="calendar-grid">
+      @for (day of calendarDays(); track day.dateString) {
+        <div
+          class="calendar-day"
+          [class.other-month]="!day.isCurrentMonth"
+          [class.today]="day.isToday"
+          [class.has-events]="day.events.length > 0"
+          [class.selected]="selectedDate() && formatDate(selectedDate()!) === day.dateString"
+          (click)="selectDate(day)"
+        >
+          <div class="day-header">
+            <span class="day-number">{{ day.dayNumber }}</span>
+            @if (day.events.length > 0) {
+              <span class="event-count">{{ day.events.length }}</span>
+            }
+          </div>
+
+          @if (day.events.length > 0 && day.isCurrentMonth) {
+            <div class="day-events">
+              @for (event of day.events.slice(0, 2); track event.id) {
+                <div
+                  class="event-pill"
+                  (click)="showEventDetail(event); $event.stopPropagation()"
+                  [title]="event.event_name + ' at ' + formatTime(event.event_time)"
+                >
+                  <span class="event-time">{{ formatTime(event.event_time) }}</span>
+                  <span class="event-name">{{ event.event_name }}</span>
+                </div>
+              }
+              @if (day.events.length > 2) {
+                <div class="more-events">+{{ day.events.length - 2 }} more</div>
+              }
+            </div>
+          }
+
+          @if (day.isCurrentMonth) {
+            <button
+              class="add-event-day-btn"
+              (click)="showAddEventForm(day); $event.stopPropagation()"
+              title="Add event"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+            </button>
+          }
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- Event Detail Modal -->
+  @if (isEventDetailOpen() && eventDetailData()) {
+    <div class="modal-overlay" (click)="closeEventDetail()">
+      <div class="event-detail-modal" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h2 class="modal-title">Event Details</h2>
+          <button class="modal-close-btn" (click)="closeEventDetail()">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+
+        <div class="modal-body">
+          <div class="detail-section">
+            <label class="detail-label">Event Name</label>
+            <p class="detail-value">{{ eventDetailData()!.event_name }}</p>
+          </div>
+
+          <div class="detail-row">
+            <div class="detail-section">
+              <label class="detail-label">Date</label>
+              <p class="detail-value">{{ eventDetailData()!.event_date | date: 'fullDate' }}</p>
+            </div>
+
+            <div class="detail-section">
+              <label class="detail-label">Time</label>
+              <p class="detail-value">{{ formatTime(eventDetailData()!.event_time) }}</p>
+            </div>
+          </div>
+
+          @if (eventDetailData()!.description) {
+            <div class="detail-section">
+              <label class="detail-label">Description</label>
+              <p class="detail-value description">{{ eventDetailData()!.description }}</p>
+            </div>
+          }
+
+          <div class="detail-section">
+            <label class="detail-label">Created</label>
+            <p class="detail-value">{{ eventDetailData()!.created_at | date: 'medium' }}</p>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button
+            class="modal-btn btn-edit"
+            (click)="showEditEventForm(eventDetailData()!); closeEventDetail()"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+            </svg>
+            Edit Event
+          </button>
+          <button
+            class="modal-btn btn-delete"
+            (click)="deleteEvent(eventDetailData()!.id); closeEventDetail()"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path
+                d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+              ></path>
+            </svg>
+            Delete Event
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Delete Confirmation Dialog -->
+  @if (isDeleteConfirmOpen()) {
+    <div class="modal-overlay" (click)="cancelDelete()">
+      <div class="confirm-dialog" (click)="$event.stopPropagation()">
+        <div class="confirm-icon">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="48"
+            height="48"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+        </div>
+        <h3 class="confirm-title">Delete Event?</h3>
+        <p class="confirm-message">
+          Are you sure you want to delete this event? This action cannot be undone.
+        </p>
+        <div class="confirm-actions">
+          <button class="confirm-btn btn-cancel" (click)="cancelDelete()">Cancel</button>
+          <button class="confirm-btn btn-confirm-delete" (click)="confirmDelete()">Delete</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Loading Overlay -->
+  @if (isLoading()) {
+    <div class="loading-overlay">
+      <div class="spinner"></div>
+    </div>
+  }
 </div>

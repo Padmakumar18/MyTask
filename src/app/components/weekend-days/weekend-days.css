@@ -248,6 +248,88 @@
 /* Tasks Container */
 .tasks-container {
   min-height: 300px;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* Task Section */
+.task-section {
+  background: white;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Section Header */
+.section-header {
+  padding: 1rem 1.25rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 2px solid;
+}
+
+.section-header.ongoing-header {
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+  border-bottom-color: #f59e0b;
+}
+
+.section-header.completed-header {
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+  border-bottom-color: #10b981;
+}
+
+.section-title-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.section-icon {
+  flex-shrink: 0;
+}
+
+.section-header.ongoing-header .section-icon {
+  color: #f59e0b;
+}
+
+.section-header.completed-header .section-icon {
+  color: #10b981;
+}
+
+.section-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.section-header.ongoing-header .section-title {
+  color: #92400e;
+}
+
+.section-header.completed-header .section-title {
+  color: #065f46;
+}
+
+.section-count {
+  background: white;
+  color: #64748b;
+  font-size: 0.875rem;
+  font-weight: 600;
+  padding: 0.375rem 0.75rem;
+  border-radius: 9999px;
+  border: 2px solid;
+}
+
+.section-header.ongoing-header .section-count {
+  border-color: #f59e0b;
+  color: #92400e;
+}
+
+.section-header.completed-header .section-count {
+  border-color: #10b981;
+  color: #065f46;
 }
 
 /* Empty State */
@@ -280,6 +362,7 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 1rem;
+  padding: 1rem;
 }
 
 /* Task Card */

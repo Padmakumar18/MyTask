@@ -1,13 +1,15 @@
-import { Component, OnInit, signal, computed } from '@angular/core';
+import { Component, OnInit, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { EventsService } from '../../services/core/events.service';
 import { Event } from '../../models/event.model';
+import { UserService } from '../../services/user.service';
 import { toast } from 'ngx-sonner';
 
 interface CalendarDay {
   date: Date;
   dateString: string;
+  dayNumber: number;
   isCurrentMonth: boolean;
   isToday: boolean;
   events: Event[];
@@ -20,21 +22,27 @@ interface CalendarDay {
   styleUrl: './events.css',
 })
 export class Events implements OnInit {
-  events = signal<Event[]>([]);
-  currentDate = signal(new Date());
-  selectedDate = signal<string | null>(null);
-  calendarDays = signal<CalendarDay[]>([]);
+  private events = signal<Event[]>([]);
+  private currentDate = signal(new Date());
+  selectedDate = signal<Date | null>(null);
 
+  calendarDays = signal<CalendarDay[]>([]);
   isAddingEvent = signal(false);
   isEditingEvent = signal(false);
   selectedEvent = signal<Event | null>(null);
   eventToDelete = signal<string | null>(null);
   isDeleteConfirmOpen = signal(false);
   isLoading = signal(false);
+  isEventDetailOpen = signal(false);
+  eventDetailData = signal<Event | null>(null);
 
   eventForm: FormGroup;
-  userId: string | null = null;
 
+  private fb = inject(FormBuilder);
+  private eventsService = inject(EventsService);
+  private userService = inject(UserService);
+
+  // Computed properties
   currentMonthYear = computed(() => {
     const date = this.currentDate();
     return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
@@ -43,37 +51,43 @@ export class Events implements OnInit {
   selectedDateEvents = computed(() => {
     const selectedDate = this.selectedDate();
     if (!selectedDate) return [];
-    return this.events().filter((event) => event.event_date === selectedDate);
+
+    const dateString = this.formatDate(selectedDate);
+    return this.events()
+      .filter((event) => event.event_date === dateString)
+      .sort((a, b) => a.event_time.localeCompare(b.event_time));
   });
 
-  constructor(
-    private fb: FormBuilder,
-    private eventsService: EventsService,
-  ) {
+  weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+  constructor() {
     this.eventForm = this.fb.group({
-      title: ['', [Validators.required, Validators.minLength(2)]],
+      event_name: ['', [Validators.required, Validators.minLength(2)]],
       description: [''],
       event_date: ['', Validators.required],
+      event_time: ['', Validators.required],
     });
   }
 
   async ngOnInit() {
-    // Get userId from localStorage or your auth service
-    const user = localStorage.getItem('user');
-    if (user) {
-      const userData = JSON.parse(user);
-      this.userId = userData.user_id;
+    const userId = this.userService.getUserId();
+    if (userId) {
+      console.log('Events - User ID loaded:', userId);
       await this.loadEvents();
       this.generateCalendar();
+    } else {
+      console.warn('Events - No user found');
+      toast.warning('Please log in to view your events');
     }
   }
 
   async loadEvents() {
-    if (!this.userId) return;
+    const userId = this.userService.getUserId();
+    if (!userId) return;
 
     this.isLoading.set(true);
     try {
-      const events = await this.eventsService.getEvents(this.userId);
+      const events = await this.eventsService.getEvents(userId);
       this.events.set(events);
       this.generateCalendar();
     } catch (error) {
@@ -91,6 +105,8 @@ export class Events implements OnInit {
 
     const firstDay = new Date(year, month, 1);
     const lastDay = new Date(year, month + 1, 0);
+
+    // Start from the first day of the week containing the first day of the month
     const startDate = new Date(firstDay);
     startDate.setDate(startDate.getDate() - firstDay.getDay());
 
@@ -98,9 +114,11 @@ export class Events implements OnInit {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
+    // Generate 42 days (6 weeks) for consistent calendar grid
     for (let i = 0; i < 42; i++) {
       const currentDay = new Date(startDate);
       currentDay.setDate(startDate.getDate() + i);
+      currentDay.setHours(0, 0, 0, 0);
 
       const dateString = this.formatDate(currentDay);
       const dayEvents = this.events().filter((event) => event.event_date === dateString);
@@ -108,6 +126,7 @@ export class Events implements OnInit {
       days.push({
         date: currentDay,
         dateString,
+        dayNumber: currentDay.getDate(),
         isCurrentMonth: currentDay.getMonth() === month,
         isToday: currentDay.getTime() === today.getTime(),
         events: dayEvents,
@@ -124,34 +143,49 @@ export class Events implements OnInit {
     return `${year}-${month}-${day}`;
   }
 
+  formatTime(time: string): string {
+    // Convert 24-hour time to 12-hour AM/PM format
+    const [hours, minutes] = time.split(':');
+    const hour = parseInt(hours, 10);
+    const ampm = hour >= 12 ? 'PM' : 'AM';
+    const hour12 = hour % 12 || 12;
+    return `${hour12}:${minutes} ${ampm}`;
+  }
+
   previousMonth() {
-    const date = this.currentDate();
+    const date = new Date(this.currentDate());
     date.setMonth(date.getMonth() - 1);
-    this.currentDate.set(new Date(date));
+    this.currentDate.set(date);
     this.generateCalendar();
   }
 
   nextMonth() {
-    const date = this.currentDate();
+    const date = new Date(this.currentDate());
     date.setMonth(date.getMonth() + 1);
-    this.currentDate.set(new Date(date));
+    this.currentDate.set(date);
     this.generateCalendar();
   }
 
-  selectDate(dateString: string) {
-    this.selectedDate.set(dateString);
+  goToToday() {
+    this.currentDate.set(new Date());
+    this.generateCalendar();
   }
 
-  showAddEventForm(dateString?: string) {
+  selectDate(day: CalendarDay) {
+    this.selectedDate.set(day.date);
+  }
+
+  showAddEventForm(day?: CalendarDay) {
     this.isAddingEvent.set(true);
     this.isEditingEvent.set(false);
     this.selectedEvent.set(null);
     this.eventForm.reset();
 
-    if (dateString) {
-      this.eventForm.patchValue({ event_date: dateString });
+    if (day) {
+      this.eventForm.patchValue({ event_date: day.dateString });
+      this.selectedDate.set(day.date);
     } else if (this.selectedDate()) {
-      this.eventForm.patchValue({ event_date: this.selectedDate() });
+      this.eventForm.patchValue({ event_date: this.formatDate(this.selectedDate()!) });
     }
   }
 
@@ -163,7 +197,14 @@ export class Events implements OnInit {
   }
 
   async addEvent() {
-    if (this.eventForm.invalid || !this.userId) {
+    const userId = this.userService.getUserId();
+
+    if (!userId) {
+      toast.error('User not logged in. Please log in first.');
+      return;
+    }
+
+    if (this.eventForm.invalid) {
       this.eventForm.markAllAsTouched();
       toast.error('Please fill in all required fields correctly');
       return;
@@ -172,10 +213,11 @@ export class Events implements OnInit {
     this.isLoading.set(true);
     try {
       const formValue = this.eventForm.value;
-      await this.eventsService.addEvent(this.userId, {
-        title: formValue.title.trim(),
+      await this.eventsService.addEvent(userId, {
+        event_name: formValue.event_name.trim(),
         description: formValue.description?.trim() || undefined,
         event_date: formValue.event_date,
+        event_time: formValue.event_time,
       });
 
       await this.loadEvents();
@@ -195,29 +237,37 @@ export class Events implements OnInit {
     this.isEditingEvent.set(true);
     this.isAddingEvent.set(true);
     this.eventForm.patchValue({
-      title: event.title,
+      event_name: event.event_name,
       description: event.description || '',
       event_date: event.event_date,
+      event_time: event.event_time,
     });
   }
 
   async updateEvent() {
+    const userId = this.userService.getUserId();
+    if (!userId) {
+      toast.error('User not logged in. Please log in first.');
+      return;
+    }
+
     if (this.eventForm.invalid) {
       this.eventForm.markAllAsTouched();
       toast.error('Please fill in all required fields correctly');
       return;
     }
 
-    const eventId = this.selectedEvent()?.event_id;
+    const eventId = this.selectedEvent()?.id;
     if (!eventId) return;
 
     this.isLoading.set(true);
     try {
       const formValue = this.eventForm.value;
       await this.eventsService.updateEvent(eventId, {
-        title: formValue.title.trim(),
+        event_name: formValue.event_name.trim(),
         description: formValue.description?.trim() || undefined,
         event_date: formValue.event_date,
+        event_time: formValue.event_time,
       });
 
       await this.loadEvents();
@@ -234,6 +284,16 @@ export class Events implements OnInit {
     }
   }
 
+  showEventDetail(event: Event) {
+    this.eventDetailData.set(event);
+    this.isEventDetailOpen.set(true);
+  }
+
+  closeEventDetail() {
+    this.isEventDetailOpen.set(false);
+    this.eventDetailData.set(null);
+  }
+
   showDeleteConfirmation(eventId: string) {
     this.eventToDelete.set(eventId);
     this.isDeleteConfirmOpen.set(true);
@@ -247,6 +307,12 @@ export class Events implements OnInit {
   async confirmDelete() {
     const eventId = this.eventToDelete();
     if (!eventId) return;
+
+    const userId = this.userService.getUserId();
+    if (!userId) {
+      toast.error('User not logged in. Please log in first.');
+      return;
+    }
 
     this.isLoading.set(true);
     try {
