@@ -197,6 +197,82 @@
     </div>
   </div>
 
+  <!-- Day Events List Modal -->
+  @if (isDayEventsOpen()) {
+    <div class="modal-overlay" (click)="closeDayEvents()">
+      <div class="day-events-modal" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <div>
+            <h2 class="modal-title">Events</h2>
+            <p class="modal-subtitle">{{ selectedDayDate() }}</p>
+          </div>
+          <button class="modal-close-btn" (click)="closeDayEvents()">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+
+        <div class="modal-body">
+          <div class="events-list">
+            @for (event of selectedDayEvents(); track event.id) {
+              <div class="event-list-item" (click)="showEventDetailFromList(event)">
+                <div class="event-list-time">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="12 6 12 12 16 14"></polyline>
+                  </svg>
+                  <span>{{ formatTime(event.event_time) }}</span>
+                </div>
+                <div class="event-list-content">
+                  <h3 class="event-list-name">{{ event.event_name }}</h3>
+                  @if (event.description) {
+                    <p class="event-list-description">{{ event.description }}</p>
+                  }
+                </div>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  class="event-list-arrow"
+                >
+                  <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
   <!-- Event Detail Modal -->
   @if (isEventDetailOpen() && eventDetailData()) {
     <div class="modal-overlay" (click)="closeEventDetail()">

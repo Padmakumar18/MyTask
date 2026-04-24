@@ -35,6 +35,9 @@ export class Events implements OnInit {
   isLoading = signal(false);
   isEventDetailOpen = signal(false);
   eventDetailData = signal<Event | null>(null);
+  isDayEventsOpen = signal(false);
+  selectedDayEvents = signal<Event[]>([]);
+  selectedDayDate = signal<string>('');
 
   eventForm: FormGroup;
 
@@ -173,6 +176,36 @@ export class Events implements OnInit {
 
   selectDate(day: CalendarDay) {
     this.selectedDate.set(day.date);
+
+    // If the day has events, show them in a popup
+    if (day.events.length > 0) {
+      this.showDayEvents(day);
+    }
+  }
+
+  showDayEvents(day: CalendarDay) {
+    const sortedEvents = [...day.events].sort((a, b) => a.event_time.localeCompare(b.event_time));
+    this.selectedDayEvents.set(sortedEvents);
+    this.selectedDayDate.set(
+      day.date.toLocaleDateString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      }),
+    );
+    this.isDayEventsOpen.set(true);
+  }
+
+  closeDayEvents() {
+    this.isDayEventsOpen.set(false);
+    this.selectedDayEvents.set([]);
+    this.selectedDayDate.set('');
+  }
+
+  showEventDetailFromList(event: Event) {
+    this.closeDayEvents();
+    this.showEventDetail(event);
   }
 
   showAddEventForm(day?: CalendarDay) {
