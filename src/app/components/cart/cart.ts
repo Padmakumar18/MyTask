@@ -40,7 +40,7 @@ export class Cart implements OnInit {
     // Get userId from UserService
     const userId = this.userService.getUserId();
     if (userId) {
-      console.log('Cart - User ID loaded:', userId);
+      // console.log('Cart - User ID loaded:', userId);
       await this.loadCartItems();
     } else {
       console.warn('Cart - No user found');

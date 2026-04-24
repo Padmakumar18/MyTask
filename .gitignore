@@ -16,6 +16,8 @@ bazel-out/
 
 # ===============================
 
+src/environments/environment.ts
+src/environments/environment.prod.ts
 
 # Optional: ignore all environment files except example
 

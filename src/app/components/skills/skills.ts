@@ -66,7 +66,7 @@ export class Skills implements OnInit {
     // Get userId from UserService
     const userId = this.userService.getUserId();
     if (userId) {
-      console.log('Skills - User ID loaded:', userId);
+      // console.log('Skills - User ID loaded:', userId);
       await this.loadSkills();
     } else {
       console.warn('Skills - No user found');

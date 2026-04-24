@@ -64,7 +64,7 @@ export class CartService {
   }
 
   async deleteCartItem(cartId: string) {
-    console.log(cartId);
+    // console.log(cartId);
     const supabase = this.supabaseService.getClient();
 
     const { data, error } = await supabase.from('cart').delete().eq('cart_id', cartId).select();

@@ -127,7 +127,7 @@
         </div>
         <div class="summary-item total">
           <span class="summary-label">Total Price:</span>
-          <span class="summary-value">${{ totalPrice().toFixed(2) }}</span>
+          <span class="summary-value">INR : {{ totalPrice().toFixed(2) | number: '1.0-0' }}</span>
         </div>
       </div>
 
@@ -137,7 +137,7 @@
           <div class="cart-item-card">
             <div class="cart-item-header">
               <h3 class="cart-item-name">{{ item.product_name }}</h3>
-              <span class="cart-item-price">${{ item.price.toFixed(2) }}</span>
+              <span class="cart-item-price"> Rs. {{ item.price | number: '1.0-0' }} </span>
             </div>
             <div class="cart-item-body">
               @if (item.product_link) {
