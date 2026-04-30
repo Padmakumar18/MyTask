@@ -24,7 +24,7 @@ export class HomeLayout {
     { path: 'week-days', label: 'Week Days' },
     { path: 'weekend-days', label: 'Weekend Days' },
     { path: 'skills', label: 'Skills' },
-    { path: 'youtube', label: 'Watch Later' },
+    { path: 'youtube-categories', label: 'Watch Later' },
   ];
 
   constructor(

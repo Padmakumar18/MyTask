@@ -52,8 +52,16 @@ export const routes: Routes = [
         component: Skills,
       },
       {
-        path: 'youtube',
-        component: Youtube,
+        path: 'youtube-categories',
+        loadComponent: () =>
+          import('./components/youtube-categories/youtube-categories').then(
+            (m) => m.YoutubeCategories,
+          ),
+      },
+      {
+        path: 'youtube-videos/:categoryId',
+        loadComponent: () =>
+          import('./components/youtube-videos/youtube-videos').then((m) => m.YoutubeVideos),
       },
     ],
   },
