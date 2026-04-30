@@ -32,8 +32,13 @@ export const routes: Routes = [
         component: Tasks,
       },
       {
-        path: 'cart',
-        component: Cart,
+        path: 'cart-categories',
+        loadComponent: () =>
+          import('./components/cart-categories/cart-categories').then((m) => m.CartCategories),
+      },
+      {
+        path: 'cart-items/:categoryId',
+        loadComponent: () => import('./components/cart-items/cart-items').then((m) => m.CartItems),
       },
       {
         path: 'events',

@@ -19,7 +19,7 @@ export class HomeLayout {
 
   navItems = [
     { path: 'tasks', label: 'Task' },
-    { path: 'cart', label: 'Cart' },
+    { path: 'cart-categories', label: 'Cart' },
     { path: 'events', label: 'Events' },
     { path: 'week-days', label: 'Week Days' },
     { path: 'weekend-days', label: 'Weekend Days' },

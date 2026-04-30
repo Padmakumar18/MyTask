@@ -1,0 +1,283 @@
+<div class="page-container">
+  <!-- Header with Back Button -->
+  <div class="content-header">
+    <button class="back-btn" (click)="goBack()">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="20"
+        height="20"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <line x1="19" y1="12" x2="5" y2="12"></line>
+        <polyline points="12 19 5 12 12 5"></polyline>
+      </svg>
+      Back to Categories
+    </button>
+
+    <div class="header-top">
+      <h1 class="content-title">{{ categoryName() || 'Cart Items' }}</h1>
+      @if (!isAddingItem()) {
+        <button class="add-item-btn" (click)="showAddItemForm()">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          Add Item
+        </button>
+      }
+    </div>
+
+    <!-- Statistics -->
+    <div class="stats-summary">
+      <div class="stat-item">
+        <span class="stat-value">{{ itemCount() }}</span>
+        <span class="stat-label">Items</span>
+      </div>
+      <div class="stat-item total">
+        <span class="stat-value">₹{{ totalPrice().toFixed(2) }}</span>
+        <span class="stat-label">Total</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add/Edit Item Form -->
+  @if (isAddingItem()) {
+    <div class="item-form-card">
+      <h3 class="form-title">{{ isEditingItem() ? 'Edit Item' : 'Add Item' }}</h3>
+      <form [formGroup]="itemForm" (ngSubmit)="isEditingItem() ? updateItem() : addItem()">
+        <div class="form-group">
+          <label for="product-name" class="form-label">Product Name *</label>
+          <input
+            id="product-name"
+            type="text"
+            formControlName="product_name"
+            class="form-input"
+            placeholder="Enter product name..."
+            maxlength="255"
+          />
+          @if (itemForm.get('product_name')?.invalid && itemForm.get('product_name')?.touched) {
+            <span class="error-text">Product name is required</span>
+          }
+        </div>
+
+        <div class="form-group">
+          <label for="price" class="form-label">Price *</label>
+          <input
+            id="price"
+            type="number"
+            formControlName="price"
+            class="form-input"
+            placeholder="0.00"
+            step="0.01"
+            min="0"
+          />
+          @if (itemForm.get('price')?.invalid && itemForm.get('price')?.touched) {
+            <span class="error-text">Valid price is required</span>
+          }
+        </div>
+
+        <div class="form-group">
+          <label for="product-link" class="form-label">Product Link (Optional)</label>
+          <input
+            id="product-link"
+            type="url"
+            formControlName="product_link"
+            class="form-input"
+            placeholder="https://..."
+          />
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn-primary" [disabled]="itemForm.invalid || isLoading()">
+            {{ isEditingItem() ? 'Update Item' : 'Add Item' }}
+          </button>
+          <button type="button" class="btn-secondary" (click)="cancelItemForm()">Cancel</button>
+        </div>
+      </form>
+    </div>
+  }
+
+  <!-- Items Grid -->
+  <div class="items-container">
+    @if (allItems().length === 0) {
+      <div class="empty-state">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="64"
+          height="64"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <circle cx="9" cy="21" r="1"></circle>
+          <circle cx="20" cy="21" r="1"></circle>
+          <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+        </svg>
+        <p>No items in this category</p>
+        @if (!isAddingItem()) {
+          <button class="add-item-btn" (click)="showAddItemForm()" style="margin-top: 1rem">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            Add Your First Item
+          </button>
+        }
+      </div>
+    } @else {
+      <div class="items-grid">
+        @for (item of allItems(); track item.cart_item_id) {
+          <div class="item-card">
+            <div class="item-content">
+              <div class="item-header">
+                <h3 class="item-name" [title]="item.product_name">
+                  {{ item.product_name }}
+                </h3>
+                <span class="item-price">₹{{ item.price.toFixed(2) }}</span>
+              </div>
+
+              @if (item.product_link) {
+                <a
+                  [href]="item.product_link"
+                  target="_blank"
+                  class="product-link"
+                  (click)="$event.stopPropagation()"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                    <polyline points="15 3 21 3 21 9"></polyline>
+                    <line x1="10" y1="14" x2="21" y2="3"></line>
+                  </svg>
+                  View Product
+                </a>
+              }
+
+              <div class="item-actions">
+                <button
+                  class="action-btn edit-btn"
+                  (click)="showEditItemForm(item)"
+                  title="Edit item"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                  </svg>
+                </button>
+                <button
+                  class="action-btn delete-btn"
+                  (click)="deleteItem(item.cart_item_id)"
+                  title="Delete item"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path
+                      d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+                    ></path>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    }
+  </div>
+
+  <!-- Delete Confirmation Dialog -->
+  @if (isDeleteConfirmOpen()) {
+    <div class="modal-overlay" (click)="cancelDelete()">
+      <div class="confirm-dialog" (click)="$event.stopPropagation()">
+        <div class="confirm-icon">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="48"
+            height="48"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+        </div>
+        <h3 class="confirm-title">Delete Item?</h3>
+        <p class="confirm-message">
+          Are you sure you want to delete this item? This action cannot be undone.
+        </p>
+        <div class="confirm-actions">
+          <button class="confirm-btn btn-cancel" (click)="cancelDelete()">Cancel</button>
+          <button class="confirm-btn btn-confirm-delete" (click)="confirmDelete()">Delete</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Loading Overlay -->
+  @if (isLoading()) {
+    <div class="loading-overlay">
+      <div class="spinner"></div>
+    </div>
+  }
+</div>

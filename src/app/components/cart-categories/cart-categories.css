@@ -19,7 +19,7 @@
 .content-title {
   font-size: 2rem;
   font-weight: 700;
-  color: #ff0000;
+  color: #10b981;
   margin: 0;
 }
 
@@ -28,19 +28,19 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.75rem 1.5rem;
-  background: linear-gradient(135deg, #ff0000 0%, #cc0000 100%);
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
   color: white;
   border: none;
   border-radius: 0.5rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 2px 8px rgba(255, 0, 0, 0.2);
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.2);
 }
 
 .add-category-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(255, 0, 0, 0.3);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
 }
 
 /* Form Card */
@@ -50,7 +50,7 @@
   padding: 2rem;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   margin-bottom: 2rem;
-  border: 2px solid #ff0000;
+  border: 2px solid #10b981;
 }
 
 .form-title {
@@ -82,8 +82,8 @@
 
 .form-input:focus {
   outline: none;
-  border-color: #ff0000;
-  box-shadow: 0 0 0 3px rgba(255, 0, 0, 0.1);
+  border-color: #10b981;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
 }
 
 .error-text {
@@ -102,7 +102,7 @@
 .btn-primary {
   flex: 1;
   padding: 0.75rem 1.5rem;
-  background: linear-gradient(135deg, #ff0000 0%, #cc0000 100%);
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
   color: white;
   border: none;
   border-radius: 0.5rem;
@@ -113,7 +113,7 @@
 
 .btn-primary:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(255, 0, 0, 0.3);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
 }
 
 .btn-primary:disabled {
@@ -164,14 +164,14 @@
 
 .category-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 8px 16px rgba(255, 0, 0, 0.2);
-  border-color: #ff0000;
+  box-shadow: 0 8px 16px rgba(16, 185, 129, 0.2);
+  border-color: #10b981;
 }
 
 .category-icon {
   width: 64px;
   height: 64px;
-  background: linear-gradient(135deg, #ff0000 0%, #cc0000 100%);
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
   border-radius: 1rem;
   display: flex;
   align-items: center;
@@ -350,7 +350,7 @@
   width: 48px;
   height: 48px;
   border: 4px solid #f3f4f6;
-  border-top-color: #ff0000;
+  border-top-color: #10b981;
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
