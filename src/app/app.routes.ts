@@ -7,6 +7,7 @@ import { Cart } from './components/cart/cart';
 import { Events } from './components/events/events';
 import { WeekDays } from './components/week-days/week-days';
 import { WeekendDays } from './components/weekend-days/weekend-days';
+import { Youtube } from './components/youtube/youtube';
 import { authGuard } from './services/auth.guard';
 import { guestGuard } from './services/guest.guard';
 
@@ -49,6 +50,10 @@ export const routes: Routes = [
       {
         path: 'skills',
         component: Skills,
+      },
+      {
+        path: 'youtube',
+        component: Youtube,
       },
     ],
   },
